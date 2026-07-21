@@ -1,0 +1,239 @@
+{
+  "project": {
+    "title": "世上最美味的泡面",
+    "mode": "speed",
+    "images_per_scene": 1,
+    "derive_bw": "local",
+    "enable_detail": false,
+    "gen_size": 1024,
+    "export_size": [
+      1080,
+      1440
+    ],
+    "ratio": "3:4",
+    "width": 1080,
+    "height": 1440,
+    "fps": 30,
+    "transition": "cut",
+    "transition_sec": 0.7,
+    "style_lock": "minimalist Chinese diary comic reconstructed from the supplied reference video, pure white background, uneven black felt-tip pen outlines, naive wobbly proportions, rough dense black crayon scribbles for dark areas, sparse props, abundant negative space, selective muted wax-crayon color only, no realistic shading, no paper texture, no watermark",
+    "character_lock": "固定两位主角：父亲约35岁，短黑发，清瘦疲惫的脸，灰蓝色旧工装外套、白色内衫、深灰长裤、黑布鞋；儿子7岁，圆脸、短黑发、身形小，赭黄色针织上衣、灰蓝长裤、黑布鞋。两人的脸型、发型、年龄、服装配色和身体比例在所有场景必须一致；母亲只允许以墙上小幅遗照出现，不得作为真人出场。",
+    "audio": {
+      "voiceover": "post",
+      "bgm": "optional_bed_only",
+      "bgm_follows_text": false
+    }
+  },
+  "scenes": [
+    {
+      "id": "01",
+      "duration_sec": 8.0,
+      "text": "他是个单亲爸爸，\n独自带着一个七岁的孩子。",
+      "narration": "他是个单亲爸爸，独自带着一个七岁的孩子。妻子走后，家里就只剩他们两个人了。",
+      "visual": "根据文案绘制一个单一、清楚、可画的白底日记漫画场景：他是个单亲爸爸，独自带着一个七岁的孩子。",
+      "shot": "story_beat",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": "仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白",
+      "detail_hint": null,
+      "assets": {
+        "text_image": "assets/generated/codex/世上最美味的泡面-811fffb2/01_text.png",
+        "bw": "assets/generated/codex/世上最美味的泡面-811fffb2/01_bw.png",
+        "detail": null,
+        "color": "assets/generated/codex/世上最美味的泡面-811fffb2/01_color.png"
+      }
+    },
+    {
+      "id": "02",
+      "duration_sec": 7.5,
+      "text": "那天要出差，火车不等人，\n他匆匆关上门。",
+      "narration": "那天要出差，火车不等人。他来不及陪孩子吃早餐，匆匆关上门。",
+      "visual": "根据文案绘制一个单一、清楚、可画的白底日记漫画场景：那天要出差，火车不等人，他匆匆关上门。",
+      "shot": "story_beat",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": "仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白",
+      "detail_hint": null,
+      "assets": {
+        "text_image": "assets/generated/codex/世上最美味的泡面-811fffb2/02_text.png",
+        "bw": "assets/generated/codex/世上最美味的泡面-811fffb2/02_bw.png",
+        "detail": null,
+        "color": "assets/generated/codex/世上最美味的泡面-811fffb2/02_color.png"
+      }
+    },
+    {
+      "id": "03",
+      "duration_sec": 8.0,
+      "text": "一路上，心却怎么也放不下，\n孩子一个人在家怕不怕？",
+      "narration": "一路上，心却怎么也放不下。孩子吃饭了吗？会不会哭？一个人在家，怕不怕？",
+      "visual": "根据文案绘制一个单一、清楚、可画的白底日记漫画场景：一路上，心却怎么也放不下，孩子一个人在家怕不怕？",
+      "shot": "story_beat",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": "仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白",
+      "detail_hint": null,
+      "assets": {
+        "text_image": "assets/generated/codex/世上最美味的泡面-811fffb2/03_text.png",
+        "bw": "assets/generated/codex/世上最美味的泡面-811fffb2/03_bw.png",
+        "detail": null,
+        "color": "assets/generated/codex/世上最美味的泡面-811fffb2/03_color.png"
+      }
+    },
+    {
+      "id": "04",
+      "duration_sec": 9.0,
+      "text": "爸爸别担心，我很好。",
+      "narration": "他一遍遍打电话回去。电话那头，孩子总是很懂事地说：爸爸别担心，我很好。",
+      "visual": "根据文案绘制一个单一、清楚、可画的白底日记漫画场景：爸爸别担心，我很好。",
+      "shot": "story_beat",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": "仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白",
+      "detail_hint": null,
+      "assets": {
+        "text_image": "assets/generated/codex/世上最美味的泡面-811fffb2/04_text.png",
+        "bw": "assets/generated/codex/世上最美味的泡面-811fffb2/04_bw.png",
+        "detail": null,
+        "color": "assets/generated/codex/世上最美味的泡面-811fffb2/04_color.png"
+      }
+    },
+    {
+      "id": "05",
+      "duration_sec": 10.5,
+      "text": "事情还没办完，\n他就提前赶了回来。",
+      "narration": "事情还没办完，他就提前赶了回来。推开门，孩子已经睡着了。他松了口气，一身疲倦，正要躺下——",
+      "visual": "根据文案绘制一个单一、清楚、可画的白底日记漫画场景：事情还没办完，他就提前赶了回来。",
+      "shot": "story_beat",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": "仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白",
+      "detail_hint": null,
+      "assets": {
+        "text_image": "assets/generated/codex/世上最美味的泡面-811fffb2/05_text.png",
+        "bw": "assets/generated/codex/世上最美味的泡面-811fffb2/05_bw.png",
+        "detail": null,
+        "color": "assets/generated/codex/世上最美味的泡面-811fffb2/05_color.png"
+      }
+    },
+    {
+      "id": "06",
+      "duration_sec": 4.8,
+      "text": "被子底下，有一碗打翻的泡面。",
+      "narration": "却看见被子底下，有一碗打翻的泡面。",
+      "visual": "根据文案绘制一个单一、清楚、可画的白底日记漫画场景：被子底下，有一碗打翻的泡面。",
+      "shot": "story_beat",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": "仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白",
+      "detail_hint": null,
+      "assets": {
+        "text_image": "assets/generated/codex/世上最美味的泡面-811fffb2/06_text.png",
+        "bw": "assets/generated/codex/世上最美味的泡面-811fffb2/06_bw.png",
+        "detail": null,
+        "color": "assets/generated/codex/世上最美味的泡面-811fffb2/06_color.png"
+      }
+    },
+    {
+      "id": "07",
+      "duration_sec": 11.0,
+      "text": "怒火一下子涌上来，\n父子俩都被吓住了。",
+      "narration": "怒火一下子涌上来。妻子走后，他第一次动手打了孩子：为什么这么调皮？把被子弄成这样，谁来洗？",
+      "visual": "根据文案绘制一个单一、清楚、可画的白底日记漫画场景：怒火一下子涌上来，他第一次动手打了孩子。",
+      "shot": "story_beat",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": "仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白",
+      "detail_hint": null,
+      "assets": {
+        "text_image": "assets/generated/codex/世上最美味的泡面-811fffb2/07_text.png",
+        "bw": "assets/generated/codex/世上最美味的泡面-811fffb2/07_bw.png",
+        "detail": null,
+        "color": "assets/generated/codex/世上最美味的泡面-811fffb2/07_color.png"
+      }
+    },
+    {
+      "id": "08",
+      "duration_sec": 7.5,
+      "text": "我没有调皮……这是给爸爸留\n的晚餐。",
+      "narration": "孩子抽抽噎噎，小声说：我没有调皮……这是给爸爸留的晚餐。",
+      "visual": "根据文案绘制一个单一、清楚、可画的白底日记漫画场景：我没有调皮……这是给爸爸留的晚餐。",
+      "shot": "story_beat",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": "仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白",
+      "detail_hint": null,
+      "assets": {
+        "text_image": "assets/generated/codex/世上最美味的泡面-811fffb2/08_text.png",
+        "bw": "assets/generated/codex/世上最美味的泡面-811fffb2/08_bw.png",
+        "detail": null,
+        "color": "assets/generated/codex/世上最美味的泡面-811fffb2/08_color.png"
+      }
+    },
+    {
+      "id": "09",
+      "duration_sec": 12.0,
+      "text": "孩子特地泡了两碗面，\n把另一碗塞进被子里保温。",
+      "narration": "原来，孩子怕他回来饿着，特地泡了两碗面。一碗自己吃了，另一碗，塞进被子里保温。只是等得太久，面凉了，也洒了。",
+      "visual": "根据文案绘制一个单一、清楚、可画的白底日记漫画场景：孩子特地泡了两碗面，把另一碗塞进被子里保温。",
+      "shot": "story_beat",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": "仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白",
+      "detail_hint": null,
+      "assets": {
+        "text_image": "assets/generated/codex/世上最美味的泡面-811fffb2/09_text.png",
+        "bw": "assets/generated/codex/世上最美味的泡面-811fffb2/09_bw.png",
+        "detail": null,
+        "color": "assets/generated/codex/世上最美味的泡面-811fffb2/09_color.png"
+      }
+    },
+    {
+      "id": "10",
+      "duration_sec": 11.0,
+      "text": "孩子啊……这是世上，\n最美味的泡面。",
+      "narration": "爸爸愣住了。他紧紧抱住孩子，看着碗里那半碗已经泡胀的面，声音发颤：孩子啊……这是世上，最美味的泡面。",
+      "visual": "根据文案绘制一个单一、清楚、可画的白底日记漫画场景：孩子啊……这是世上，最美味的泡面。",
+      "shot": "story_beat",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": "仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白",
+      "detail_hint": null,
+      "assets": {
+        "text_image": "assets/generated/codex/世上最美味的泡面-811fffb2/10_text.png",
+        "bw": "assets/generated/codex/世上最美味的泡面-811fffb2/10_bw.png",
+        "detail": null,
+        "color": "assets/generated/codex/世上最美味的泡面-811fffb2/10_color.png"
+      }
+    }
+  ]
+}

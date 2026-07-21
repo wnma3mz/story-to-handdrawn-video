@@ -1,0 +1,41 @@
+{
+  "name": "story-to-handdrawn-video",
+  "version": "1.0.0",
+  "description": "Turn Chinese stories or uploaded comic pages into silent hand-drawn Remotion videos.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gnipbao/story-to-handdrawn-video.git"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "remotion studio src/index.ts",
+    "build": "remotion bundle src/index.ts build",
+    "package:share": "npm run check && node scripts/package-project.mjs",
+    "story": "node scripts/story-to-video.mjs",
+    "import:codex": "node scripts/import-codex-images.mjs",
+    "import:uploaded": "node scripts/import-uploaded-pages.mjs",
+    "render": "remotion render src/index.ts PictureSilent out/picture_silent.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p --muted --concurrency=1",
+    "render:preview": "remotion render src/index.ts PictureSilent out/picture_silent-preview.mp4 --codec=h264 --crf=23 --pixel-format=yuv420p --muted --scale=0.6666666666666666 --concurrency=1",
+    "render:uploaded": "remotion render src/index.ts UploadedPictureSilent out/uploaded_picture_silent.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p --muted --concurrency=1",
+    "render:uploaded:preview": "remotion render src/index.ts UploadedPictureSilent out/uploaded_picture_silent-preview.mp4 --codec=h264 --crf=23 --pixel-format=yuv420p --muted --scale=0.6666666666666666 --concurrency=1",
+    "check": "npm run check:types && npm run check:storyboard",
+    "check:types": "tsc --noEmit",
+    "check:storyboard": "node scripts/validate-storyboard.mjs storyboard.json storyboard.uploaded.json"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.487",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "remotion": "4.0.487"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.11",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "typescript": "5.9.3"
+  }
+}

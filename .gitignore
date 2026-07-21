@@ -1,14 +1,16 @@
-# macOS
-.DS_Store
-
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-
-# Node
 node_modules/
-
-# Editor
-.idea/
-.vscode/
+build/
+out/
+release/
+public/assets/generated/
+prompts/generated/
+codex-image-jobs.json
+storyboard.generated.json
+uploaded-pages.json
+.env
+.env.*
+*.log
+*.tgz
+*.zip
+.DS_Store
+.npm-cache/

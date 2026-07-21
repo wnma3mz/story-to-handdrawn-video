@@ -1,0 +1,343 @@
+{
+  "project": {
+    "title": "我终于买得起稻香村了",
+    "mode": "speed",
+    "images_per_scene": 1,
+    "derive_bw": "local",
+    "enable_detail": false,
+    "gen_size": 1024,
+    "export_size": [
+      1080,
+      1440
+    ],
+    "ratio": "3:4",
+    "width": 1080,
+    "height": 1440,
+    "fps": 30,
+    "transition": "cut",
+    "style_lock": "preserve uploaded hand-drawn diary-comic artwork",
+    "character_lock": "preserve uploaded characters and composition exactly",
+    "audio": {
+      "voiceover": "post",
+      "bgm": "optional_bed_only",
+      "bgm_follows_text": false
+    }
+  },
+  "scenes": [
+    {
+      "id": "01",
+      "duration_sec": 4.4,
+      "text": "",
+      "visual": "上传图片 01",
+      "shot": "safe_uncropped_uploaded_page",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": null,
+      "detail_hint": null,
+      "caption_box": null,
+      "assets": {
+        "text_image": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/01_text.png",
+        "bw": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/01_bw.png",
+        "detail": null,
+        "color": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/01_color.png"
+      }
+    },
+    {
+      "id": "02",
+      "duration_sec": 4.4,
+      "text": "",
+      "visual": "上传图片 02",
+      "shot": "safe_uncropped_uploaded_page",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": null,
+      "detail_hint": null,
+      "caption_box": null,
+      "assets": {
+        "text_image": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/02_text.png",
+        "bw": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/02_bw.png",
+        "detail": null,
+        "color": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/02_color.png"
+      }
+    },
+    {
+      "id": "03",
+      "duration_sec": 4.4,
+      "text": "",
+      "visual": "上传图片 03",
+      "shot": "safe_uncropped_uploaded_page",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": null,
+      "detail_hint": null,
+      "caption_box": null,
+      "assets": {
+        "text_image": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/03_text.png",
+        "bw": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/03_bw.png",
+        "detail": null,
+        "color": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/03_color.png"
+      }
+    },
+    {
+      "id": "04",
+      "duration_sec": 4.4,
+      "text": "",
+      "visual": "上传图片 04",
+      "shot": "safe_uncropped_uploaded_page",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": null,
+      "detail_hint": null,
+      "caption_box": null,
+      "assets": {
+        "text_image": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/04_text.png",
+        "bw": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/04_bw.png",
+        "detail": null,
+        "color": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/04_color.png"
+      }
+    },
+    {
+      "id": "05",
+      "duration_sec": 4.4,
+      "text": "",
+      "visual": "上传图片 05",
+      "shot": "safe_uncropped_uploaded_page",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": null,
+      "detail_hint": null,
+      "caption_box": null,
+      "assets": {
+        "text_image": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/05_text.png",
+        "bw": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/05_bw.png",
+        "detail": null,
+        "color": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/05_color.png"
+      }
+    },
+    {
+      "id": "06",
+      "duration_sec": 4.4,
+      "text": "",
+      "visual": "上传图片 06",
+      "shot": "safe_uncropped_uploaded_page",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": null,
+      "detail_hint": null,
+      "caption_box": null,
+      "assets": {
+        "text_image": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/06_text.png",
+        "bw": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/06_bw.png",
+        "detail": null,
+        "color": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/06_color.png"
+      }
+    },
+    {
+      "id": "07",
+      "duration_sec": 4.4,
+      "text": "",
+      "visual": "上传图片 07",
+      "shot": "safe_uncropped_uploaded_page",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": null,
+      "detail_hint": null,
+      "caption_box": null,
+      "assets": {
+        "text_image": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/07_text.png",
+        "bw": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/07_bw.png",
+        "detail": null,
+        "color": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/07_color.png"
+      }
+    },
+    {
+      "id": "08",
+      "duration_sec": 4.4,
+      "text": "",
+      "visual": "上传图片 08",
+      "shot": "safe_uncropped_uploaded_page",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": null,
+      "detail_hint": null,
+      "caption_box": null,
+      "assets": {
+        "text_image": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/08_text.png",
+        "bw": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/08_bw.png",
+        "detail": null,
+        "color": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/08_color.png"
+      }
+    },
+    {
+      "id": "09",
+      "duration_sec": 4.4,
+      "text": "",
+      "visual": "上传图片 09",
+      "shot": "safe_uncropped_uploaded_page",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": null,
+      "detail_hint": null,
+      "caption_box": null,
+      "assets": {
+        "text_image": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/09_text.png",
+        "bw": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/09_bw.png",
+        "detail": null,
+        "color": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/09_color.png"
+      }
+    },
+    {
+      "id": "10",
+      "duration_sec": 4.4,
+      "text": "",
+      "visual": "上传图片 10",
+      "shot": "safe_uncropped_uploaded_page",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": null,
+      "detail_hint": null,
+      "caption_box": null,
+      "assets": {
+        "text_image": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/10_text.png",
+        "bw": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/10_bw.png",
+        "detail": null,
+        "color": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/10_color.png"
+      }
+    },
+    {
+      "id": "11",
+      "duration_sec": 4.4,
+      "text": "",
+      "visual": "上传图片 11",
+      "shot": "safe_uncropped_uploaded_page",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": null,
+      "detail_hint": null,
+      "caption_box": null,
+      "assets": {
+        "text_image": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/11_text.png",
+        "bw": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/11_bw.png",
+        "detail": null,
+        "color": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/11_color.png"
+      }
+    },
+    {
+      "id": "12",
+      "duration_sec": 4.4,
+      "text": "",
+      "visual": "上传图片 12",
+      "shot": "safe_uncropped_uploaded_page",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": null,
+      "detail_hint": null,
+      "caption_box": null,
+      "assets": {
+        "text_image": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/12_text.png",
+        "bw": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/12_bw.png",
+        "detail": null,
+        "color": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/12_color.png"
+      }
+    },
+    {
+      "id": "13",
+      "duration_sec": 4.4,
+      "text": "",
+      "visual": "上传图片 13",
+      "shot": "safe_uncropped_uploaded_page",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": null,
+      "detail_hint": null,
+      "caption_box": null,
+      "assets": {
+        "text_image": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/13_text.png",
+        "bw": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/13_bw.png",
+        "detail": null,
+        "color": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/13_color.png"
+      }
+    },
+    {
+      "id": "14",
+      "duration_sec": 4.4,
+      "text": "",
+      "visual": "上传图片 14",
+      "shot": "safe_uncropped_uploaded_page",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": null,
+      "detail_hint": null,
+      "caption_box": null,
+      "assets": {
+        "text_image": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/14_text.png",
+        "bw": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/14_bw.png",
+        "detail": null,
+        "color": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/14_color.png"
+      }
+    },
+    {
+      "id": "15",
+      "duration_sec": 4.4,
+      "text": "",
+      "visual": "上传图片 15",
+      "shot": "safe_uncropped_uploaded_page",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": null,
+      "detail_hint": null,
+      "caption_box": null,
+      "assets": {
+        "text_image": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/15_text.png",
+        "bw": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/15_bw.png",
+        "detail": null,
+        "color": "assets/generated/uploads/我终于买得起稻香村了-f4e5c657/15_color.png"
+      }
+    }
+  ]
+}
