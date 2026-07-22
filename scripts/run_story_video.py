@@ -46,12 +46,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--character-lock")
     parser.add_argument("--visual-plan", type=Path)
     parser.add_argument(
+        "--scene-contract",
+        action="store_true",
+        help="Preserve one non-empty source line per complete visual-plan scene",
+    )
+    parser.add_argument(
         "--mode",
         choices=("plan", "generate", "full", "import", "render", "preview"),
         default="plan",
     )
     parser.add_argument("--generator", choices=("codex", "api"), default="codex")
     parser.add_argument("--manifest", type=Path)
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Episode-specific generated storyboard path",
+    )
     parser.add_argument("--asset-set")
     parser.add_argument("--character-reference", type=Path)
     parser.add_argument("--text-mode", choices=("image2", "font"), default="font")
@@ -183,8 +193,12 @@ def main() -> None:
         command += ["--character-lock", args.character_lock]
     if args.visual_plan:
         command += ["--visual-plan", str(args.visual_plan.expanduser().resolve())]
+    if args.scene_contract:
+        command.append("--scene-contract")
     if args.manifest:
         command += ["--manifest", str(args.manifest.expanduser().resolve())]
+    if args.output:
+        command += ["--output", str(args.output.expanduser().resolve())]
     if args.asset_set:
         command += ["--asset-set", args.asset_set]
     if args.character_reference:

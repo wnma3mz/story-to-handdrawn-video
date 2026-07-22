@@ -60,6 +60,7 @@ const shouldPrepareCodex = shouldGenerate && generator === 'codex';
 const shouldApply = args.apply === true;
 const shouldRender = args.render === true;
 const shouldForce = args.force === true;
+const sceneContract = args['scene-contract'] === true;
 
 if (!['image2', 'font'].includes(textMode)) {
   throw new Error('--text-mode must be image2 or font');
@@ -203,7 +204,45 @@ const characterLock = String(
     '重复出现的主角须保持同一张脸、发型、年龄、服装配色和身体比例；具体人物身份以故事原文为准；不得添加原文未提及的配角、道具或文字',
 );
 
-const storyParts = splitStory(sourceText);
+const sourceParagraphs = sourceText
+  .replace(/\r/g, '')
+  .split(/\n+/)
+  .map((part) => part.trim())
+  .filter(Boolean)
+  .map((part) => (terminalPunctuation.test(part) ? part : `${part}。`));
+const plannedSceneIds = Object.keys(visualPlan).filter((key) => /^\d+$/.test(key));
+const hasCompleteParagraphPlan =
+  plannedSceneIds.length === sourceParagraphs.length &&
+  sourceParagraphs.every((_, index) =>
+    Object.hasOwn(visualPlan, String(index + 1).padStart(2, '0')),
+  );
+if (sceneContract && !hasCompleteParagraphPlan) {
+  throw new Error(
+    '--scene-contract requires visual-plan keys 01..NN to match every non-empty source line exactly',
+  );
+}
+if (sceneContract) {
+  for (let index = 0; index < sourceParagraphs.length; index += 1) {
+    const id = String(index + 1).padStart(2, '0');
+    const entry = visualPlan[id];
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new Error(`--scene-contract requires ${id} to be an object`);
+    }
+    const caption = typeof entry.caption === 'string' ? entry.caption.trim() : '';
+    const captionLines = caption ? caption.split('\n') : [];
+    if (!caption || captionLines.length > 3 || captionLines.some((line) => !line.trim())) {
+      throw new Error(`--scene-contract requires ${id}.caption to contain 1–3 non-empty lines`);
+    }
+    const duration = Number(entry.duration_sec);
+    if (!Number.isFinite(duration) || duration < 2 || duration > 15) {
+      throw new Error(`--scene-contract requires ${id}.duration_sec within 2..15 seconds`);
+    }
+  }
+}
+// A requested scene contract preserves one non-empty source line per planned scene,
+// allowing full narration to stay on one visual beat while the shorter `caption`
+// remains readable. Ordinary prose keeps the established automatic clause splitter.
+const storyParts = sceneContract ? sourceParagraphs : splitStory(sourceText);
 if (storyParts.length === 0) throw new Error('No usable story sentences found');
 
 const safeTitle =

@@ -111,6 +111,8 @@ export STORY_VIDEO_PROJECT=/absolute/path/to/story-to-handdrawn-video
 使用建议:
 
 - 故事文本默认一个完整句子一个节拍;想控制节奏,直接在故事里按句分行即可。
+- 需要精确的一行一镜时，使用 `--scene-contract` 并让 `visual-plan.json` 从 `01` 起连续覆盖全部非空行：长旁白保持在该镜内，不再被自动子句切分；每镜必须提供 1–3 行 `caption` 和 2–15 秒 `duration_sec`，从而把“完整旁白”和“可读字幕”分开。未显式启用时仍使用原有自动分句。
+- 并行制作多集时，为每集同时指定独立的 `--output /episode/storyboard.json` 与 `--manifest /episode/codex-image-jobs.json`；manifest 会绑定该 storyboard，避免后生成的集数覆盖前集 import 目标。
 - 遇到时间跳跃、指代不明、医疗场景或年龄敏感角色时,建议先让 Agent 给出视觉规划(两位场景编号为键的 JSON),确认后再生成。
 - 默认使用 Codex Image2 生成图片;只有明确要求时才会走 OpenAI API(需 `OPENAI_API_KEY`)。
 - 先验收静音画面母版，再建立连续配音和有声封面；不要用逐镜头 TTS 或逐句变速。
@@ -259,7 +261,7 @@ Preview first (720×960, before committing to a full render):
 使用 $story-to-handdrawn-video 先给这个故事生成一个预览版。
 ```
 
-Notes: one complete sentence per beat by default; Codex Image2 is the default image generator. Approve the silent master first, then use `scripts/build_story_audio.py` with an episode config. Narration is synthesized as connected acts; VTT timestamps measure sync but never cut prose into sentence clips.
+Notes: one complete sentence per beat by default; Codex Image2 is the default image generator. For exact one-line-per-scene planning, pass `--scene-contract` with a consecutive `01..NN` visual plan covering every non-empty source line. Each entry must include a 1–3 line `caption` and `duration_sec` in `2..15`; without the flag, the established automatic sentence splitter remains active. Keep the full spoken thought in the source line and the shorter screen copy in `caption`. For parallel episodes, pair an episode-specific `--output` with its `--manifest` so later planning cannot redirect an earlier import. Approve the silent master first, then use `scripts/build_story_audio.py` with an episode config. Narration is synthesized as connected acts; VTT timestamps measure sync but never cut prose into sentence clips.
 
 ### Outputs
 

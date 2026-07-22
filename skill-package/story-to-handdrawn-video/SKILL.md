@@ -15,7 +15,7 @@ Read `references/audio-cover-sop.md` completely whenever narration or a release 
 
 1. Accept inline Chinese text, a UTF-8 file, or ordered local images. Audit source coverage before deciding episode count.
 2. For a series, freeze a continuity bible: chronology, recurring character appearance, world state, object ownership, visual style, aspect ratio, caption rules, and narrator intent.
-3. Preserve meaning and chronology. Use one complete sentence per beat by default; split only at natural narrative turns. For ambiguous scenes, create a two-digit scene-keyed visual plan.
+3. Preserve meaning and chronology. Use one complete sentence per beat by default; split only at natural narrative turns. For an explicitly planned episode, keep one non-empty source line per scene, create a complete consecutive two-digit scene-keyed visual plan, and pass `--scene-contract`. Put the full spoken thought in the source line and a shorter 1–3 line screen copy in `caption`; every entry also needs `duration_sec` within 2–15 seconds. Without the explicit flag, keep the established automatic splitter.
 4. Generate/import illustrations. Keep all critical marks inside the safe border, use contained framing, and never crop recurring characters or clues.
 5. Assign one motivated motion per continuous image interval. Do not restart a path while the same image stays onscreen. Use settled shots as well as gentle pushes, pulls, or pans.
 6. Render and approve `picture_silent.mp4` first. Never overwrite it during audio work.
@@ -44,6 +44,10 @@ python3 scripts/run_story_video.py \
   --series-title "系列名 · 手绘动画" \
   --episode-number 1 \
   --cover-background '#5E7468' \
+  --visual-plan /absolute/episode/visual-plan.json \
+  --scene-contract \
+  --output /absolute/episode/storyboard.json \
+  --manifest /absolute/episode/codex-image-jobs.json \
   --mode generate
 python3 scripts/run_story_video.py --mode import
 python3 scripts/run_story_video.py --mode render
@@ -58,6 +62,8 @@ python3 scripts/run_story_video.py --images /absolute/01.jpg /absolute/02.jpg --
 ```
 
 Use `--transition cut|page-flip`, `--layout auto|composite|full`, `--asset-set`, and `--character-reference` as needed. Reuse a reviewed character reference across episodes.
+
+When episodes are prepared in parallel, never reuse the default generated storyboard path. Pair each episode-specific `--output` with its own `--manifest`; the manifest binds that exact storyboard for later import.
 
 ## Narration and release commands
 
