@@ -29,7 +29,7 @@ sentence_level_tempo_variants = 0
 whole_group_tempo in [0.95, 1.05]
 ```
 
-Normal group gaps are 0.35–0.8 seconds. Do not produce the repeated pattern “speak, long silence, restart.”
+Normal group gaps are 0.35–0.8 seconds. Do not produce the repeated pattern “speak, long silence, restart.” Treat that planned waveform gap only as a layout constraint: TTS may include low-level sentence-tail silence, so also measure the finished master acoustically at about -42 dB. A valid plan gap does not prove that the audible pause is valid.
 
 ## Semantic synchronization
 
@@ -83,7 +83,7 @@ Apply filtering, compression, and loudness processing consistently to the whole 
 
 - Listen at normal speed across every group boundary and representative visual transition.
 - Reject clipped tails, voice resets, sentence-level gear changes, and unexplained dead air.
-- Ordinary narration should have no unplanned silence over 1.25 seconds; the longest silence is normally under 2 seconds except an approved ending.
+- Ordinary narration should default to no unplanned acoustic silence over 1.25 seconds; the longest silence is normally under 2 seconds except an approved ending. If a normal-speed human listen explicitly approves a naturally longer pause, record an episode-specific limit no higher than 1.50 seconds. Never raise the limit merely to turn a failing report green.
 - Every primary sentence must substantially overlap the image that supports it.
 - Full-file decode must pass; verify resolution, frame rate, stream count, 48 kHz audio, duration, and pixel format.
 - Cover first-frame luma below about 200 is a useful non-white warning test, not a replacement for viewing.
@@ -100,6 +100,8 @@ Two approaches are prohibited because they produced audible discontinuity in a v
 2. One connected TTS request later split into sentences, independently silence-trimmed, time-stretched, and repositioned. Timing can look precise while every boundary sounds like a gear change.
 
 The accepted correction was to synthesize a small number of narrative acts, preserve each act as one waveform, tune prose and punctuation against VTT measurements, and move only the whole act. This rule applies across voices, episodes, and stories.
+
+A later production exposed a second failure mode: every configured group gap passed, yet sentence-tail low-level silence plus the planned gap produced a longer acoustic pause. The correction is to keep both measurements in QC: configured group gaps for timeline construction and -42 dB acoustic silence on the mastered waveform for listening continuity. The acoustic threshold is configurable only within 0.50–1.50 seconds, defaults to 1.25 seconds, and any exception requires an explicit listening note. Do not fix this by cutting the connected group, shifting individual sentences, or laying noise under silence.
 
 ## Parallel episodic production
 

@@ -132,7 +132,7 @@ python3 scripts/audit_story_delivery.py \
   --cover-duration 2.7
 ```
 
-示例配置只展示结构；请按真实分镜填写每组 `scene_ids`、`start_sec` 和 `speech_text`。一组旁白一次合成，组内不切句、不逐句变速。
+示例配置只展示结构；请按真实分镜填写每组 `scene_ids`、`start_sec` 和 `speech_text`。一组旁白一次合成，组内不切句、不逐句变速。QC 会同时检查计划组间 gap 与母带的真实声学静音；默认普通停顿上限为 1.25 秒，只有正常速度人工听感明确通过时，才可用 `--ordinary-pause-limit` 记录不高于 1.50 秒的单集例外。
 
 ### 输出契约
 

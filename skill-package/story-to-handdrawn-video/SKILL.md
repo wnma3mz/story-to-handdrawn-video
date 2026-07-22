@@ -24,7 +24,7 @@ Read `references/audio-cover-sop.md` completely whenever narration or a release 
 9. Divide the episode into 3–6 genuine narrative acts. Synthesize each act once as one connected waveform. Keep its internal breath and timing intact.
 10. Use VTT cues only to measure scene alignment. Tune wording and punctuation first, then the whole-group start, then at most ±5% whole-group tempo. Never split or independently stretch sentences.
 11. Build the lossless narration master, no-cover voiced master, and audible-cover release with `scripts/build_story_audio.py`.
-12. Run `scripts/audit_story_delivery.py`, then listen at normal speed across every group boundary and representative visual transition. Automated PASS never replaces listening.
+12. Run `scripts/audit_story_delivery.py`, then listen at normal speed across every group boundary and representative visual transition. Inspect both planned group gaps and measured acoustic silence; automated PASS never replaces listening.
 13. Version every material revision and report scene count, duration, output paths, voice profile, cover status, and QC evidence.
 
 ## Picture commands
@@ -98,6 +98,7 @@ python3 scripts/audit_story_delivery.py \
 - Do not synthesize connected prose and later cut, trim, or time-stretch every sentence.
 - Keep `group_internal_cut_count = 0`, `sentence_level_tempo_variants = 0`, and whole-group tempo within `0.95..1.05`.
 - Keep ordinary group gaps around `0.35..0.8s`; reject repeated speak–silence–restart rhythm.
+- Measure the mastered waveform as well as the planned gaps. Default to no unplanned acoustic silence over `1.25s`; a listened-and-recorded episode exception may rise only to `1.50s` via `--ordinary-pause-limit`.
 - Keep primary semantic starts within `±0.6s` normally; `±0.8s` is a justified hard ceiling.
 - Keep the cover audible and visually non-white. The story picture and story audio must start at exactly the same post-cover timestamp.
 - Keep four separate artifacts: silent picture, narration WAV, no-cover voiced MP4, and cover release MP4.

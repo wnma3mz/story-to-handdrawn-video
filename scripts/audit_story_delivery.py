@@ -57,6 +57,24 @@ def loudness(path: Path) -> dict:
     return json.loads(matches[-1])
 
 
+def detect_silences(path: Path, threshold_db: float = -42.0, minimum_sec: float = 0.18) -> list[dict]:
+    result = run([
+        "ffmpeg", "-hide_banner", "-nostats", "-i", str(path), "-af",
+        f"silencedetect=noise={threshold_db}dB:d={minimum_sec}", "-f", "null", "-",
+    ])
+    starts = [float(value) for value in re.findall(r"silence_start: ([0-9.]+)", result.stderr)]
+    ends = [
+        (float(end), float(duration))
+        for end, duration in re.findall(
+            r"silence_end: ([0-9.]+) \| silence_duration: ([0-9.]+)", result.stderr
+        )
+    ]
+    return [
+        {"start_sec": start, "end_sec": end, "duration_sec": duration}
+        for start, (end, duration) in zip(starts, ends)
+    ]
+
+
 def read_json(path: Path | None) -> dict | None:
     return json.loads(path.read_text(encoding="utf-8")) if path else None
 
@@ -74,6 +92,8 @@ def main() -> int:
     parser.add_argument("--expect-fps")
     parser.add_argument("--max-sync-error", type=float, default=0.6)
     parser.add_argument("--max-group-gap", type=float, default=0.8)
+    parser.add_argument("--ordinary-pause-limit", type=float, default=1.25)
+    parser.add_argument("--max-global-silence", type=float, default=2.0)
     parser.add_argument("--max-cover-luma", type=float, default=200.0)
     parser.add_argument("--min-cover-mean-db", type=float, default=-45.0)
     parser.add_argument("--target-lufs", type=float, default=-16.0)
@@ -81,6 +101,8 @@ def main() -> int:
     parser.add_argument("--max-true-peak", type=float, default=-1.45)
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
+    if not 0.5 <= args.ordinary_pause_limit <= 1.5:
+        parser.error("--ordinary-pause-limit must stay within 0.5..1.5 seconds")
 
     metadata = probe(args.video)
     streams = metadata.get("streams", [])
@@ -115,13 +137,35 @@ def main() -> int:
         details["cover"] = {"first_frame_yavg": luma, "mean_volume_db": cover_db}
         checks["cover_first_frame_not_white"] = luma < args.max_cover_luma
         checks["cover_interval_audible"] = cover_db > args.min_cover_mean_db
+    build = read_json(args.build)
     if args.master:
         measured = loudness(args.master)
         details["loudness"] = measured
         checks["loudness_within_tolerance"] = abs(float(measured["input_i"]) - args.target_lufs) <= args.lufs_tolerance
         checks["true_peak_within_limit"] = float(measured["input_tp"]) <= args.max_true_peak
+        master_duration = float(probe(args.master)["format"]["duration"])
+        silences = detect_silences(args.master)
+        long_silences = [
+            row for row in silences
+            if float(row["duration_sec"]) > args.ordinary_pause_limit
+        ]
+        unplanned_long_silences = [
+            row for row in long_silences
+            if float(row["end_sec"]) < master_duration - 0.05
+        ]
+        maximum_silence = max((float(row["duration_sec"]) for row in silences), default=0.0)
+        details["acoustic_silence"] = {
+            "threshold_db": -42.0,
+            "minimum_silence_sec": 0.18,
+            "ordinary_pause_limit_sec": args.ordinary_pause_limit,
+            "maximum_global_silence_sec": args.max_global_silence,
+            "maximum_detected_silence_sec": round(maximum_silence, 3),
+            "long_silences": long_silences,
+            "unplanned_long_silences": unplanned_long_silences,
+        }
+        checks["no_unplanned_acoustic_silence_over_limit"] = not unplanned_long_silences
+        checks["global_acoustic_silence_within_limit"] = maximum_silence <= args.max_global_silence
 
-    build = read_json(args.build)
     if build:
         groups = build.get("groups", [])
         checks["continuous_group_layout"] = build.get("layout") == "continuous_groups_synced"

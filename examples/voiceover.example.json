@@ -9,6 +9,8 @@
   "continuity": {
     "minimum_group_gap_sec": 0.35,
     "maximum_group_gap_sec": 0.8,
+    "ordinary_pause_limit_sec": 1.25,
+    "maximum_global_silence_sec": 2.0,
     "minimum_final_tail_sec": 0.5,
     "maximum_sync_error_sec": 0.6,
     "groups": [
