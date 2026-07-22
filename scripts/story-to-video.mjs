@@ -68,6 +68,11 @@ if (!['image2', 'font'].includes(textMode)) {
 if (!['codex', 'api'].includes(generator)) {
   throw new Error('--generator must be codex or api');
 }
+if (generator === 'codex' && args.manifest && !args.output) {
+  throw new Error(
+    '--manifest requires an episode-specific --output so later planning cannot redirect import',
+  );
+}
 if (!['cut', 'page-flip'].includes(transition)) {
   throw new Error('--transition must be cut or page-flip');
 }
