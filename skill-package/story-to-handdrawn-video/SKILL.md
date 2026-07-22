@@ -19,7 +19,7 @@ Read `references/audio-cover-sop.md` completely whenever narration or a release 
 4. Generate/import illustrations. Keep all critical marks inside the safe border, use contained framing, and never crop recurring characters or clues.
 5. Assign one motivated motion per continuous image interval. Do not restart a path while the same image stays onscreen. Use settled shots as well as gentle pushes, pulls, or pans.
 6. Render and approve `picture_silent.mp4` first. Never overwrite it during audio work.
-7. Render `cover.png` from the code-based `EpisodeCover` composition. Use a deliberate non-white dominant background and exact typeset title text.
+7. Render `cover.png` from the code-based `EpisodeCover` composition. Use a deliberate non-white dominant background and exact typeset title text. Inspect long-title wrapping and reject a one- or two-character orphan line.
 8. Choose the narrator from the listening relationship. A/B at least two voices on both an opening and a later explanatory/emotional passage, then freeze one profile per series.
 9. Divide the episode into 3–6 genuine narrative acts. Synthesize each act once as one connected waveform. Keep its internal breath and timing intact.
 10. Use VTT cues only to measure scene alignment. Tune wording and punctuation first, then the whole-group start, then at most ±5% whole-group tempo. Never split or independently stretch sentences.

@@ -9,6 +9,29 @@ const splitTitle = (title: string) => {
   };
 };
 
+const balancedTitleLines = (title: string) => {
+  const explicitLines = title
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (explicitLines.length > 1) return explicitLines;
+
+  const characters = Array.from(explicitLines[0] || title.trim());
+  if (characters.length <= 8) return [characters.join('')];
+
+  const lineCount = characters.length <= 18 ? 2 : 3;
+  const lines: string[] = [];
+  let offset = 0;
+  for (let index = 0; index < lineCount; index += 1) {
+    const remainingCharacters = characters.length - offset;
+    const remainingLines = lineCount - index;
+    const take = Math.ceil(remainingCharacters / remainingLines);
+    lines.push(characters.slice(offset, offset + take).join(''));
+    offset += take;
+  }
+  return lines;
+};
+
 const chineseChapterNumber = (chapter: string): number | null => {
   const value = chapter.match(/第([一二三四五六七八九十]+)章/)?.[1];
   if (!value) return null;
@@ -36,6 +59,10 @@ export const EpisodeCover: React.FC = () => {
   const cover = storyboard.project.cover || {};
   const chapter = cover.episode_label || parsed.chapter;
   const title = cover.title || parsed.title;
+  const titleLines = balancedTitleLines(title);
+  const longestTitleLine = Math.max(...titleLines.map((line) => Array.from(line).length), 1);
+  const titleFontSize =
+    longestTitleLine <= 8 ? 102 : Math.max(58, Math.floor(800 / longestTitleLine));
   const firstScene = storyboard.scenes[0];
   const episodeNumber = String(
     cover.episode_number ||
@@ -132,14 +159,18 @@ export const EpisodeCover: React.FC = () => {
         </div>
         <div
           style={{
-            fontSize: 102,
+            fontSize: titleFontSize,
             lineHeight: 1.12,
             letterSpacing: '0.025em',
             WebkitTextStroke: `1.1px ${colors.foreground}`,
             textShadow: '4px 5px 0 rgba(31, 43, 37, 0.42)',
           }}
         >
-          {title}
+          {titleLines.map((line, index) => (
+            <div key={`${index}-${line}`} style={{whiteSpace: 'nowrap'}}>
+              {line}
+            </div>
+          ))}
         </div>
       </div>
 

@@ -50,6 +50,7 @@ The release cover is an editorial interval, not merely a PNG beside the video.
 - Use a deliberate non-white dominant field by default.
 - Keep series name, episode/chapter label, number, title, and focal image inside safe margins.
 - Render exact glyphs in code; generated art supplies imagery, not critical title text.
+- Balance long title lines deliberately. Reject automatic wraps that leave a one- or two-character orphan line; use an explicit break or a deterministic code-based balancer, then inspect the rendered cover.
 - Keep one series template while changing copy and focal art.
 - Use about 2–3 seconds with a restrained eased push and stable endpoints.
 - Give the interval audible title audio in the series voice.
