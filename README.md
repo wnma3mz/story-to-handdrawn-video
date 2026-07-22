@@ -8,7 +8,7 @@
 
 ## 中文
 
-把中文故事文案或一组有序的手绘图片,转换成 3:4 竖屏**手绘日记漫画动画**:手写体字幕、从左到右的「文字 → 黑白画稿 → 彩色插画」揭示、可选的右下角卷页翻书转场、安全不裁剪的画面构图。基于 [Remotion](https://www.remotion.dev/),默认输出无配音、无音乐的 H.264 画面轨,方便后期配音。
+把中文故事文案或一组有序的手绘图片,转换成 3:4 竖屏**手绘日记漫画成片**:手写体字幕、自然连续运镜、从左到右的「文字 → 黑白画稿 → 彩色插画」揭示、非白底有声封面，以及按情节分组的连续配音。基于 [Remotion](https://www.remotion.dev/) 与 FFmpeg；静音画面母版、无封面配音版和最终发布版分别保留。
 
 本仓库包含两部分:
 
@@ -22,7 +22,11 @@
 - 自动拆分上方文字区与下方插画区
 - 本地生成与彩色插画对齐的黑白层
 - `文字 → 黑白画稿 → 彩色插画` 从左到右揭示
+- 按叙事目的选择轻推、轻拉、平移或静止，避免同图运镜重置和机械抖动
 - 可选右下角卷页翻书转场(纸背保留淡化的原页纹理)
+- 可配置的非白底系列封面，标题由代码精确排版并带可听见的标题音频
+- 3–6 个连续叙事组配音，VTT 只用于同步测量，不切碎句子
+- 语义同步、响度、首帧、封面音频、完整解码等自动质检
 - 1080×1440 正式渲染和 720×960 快速预览
 - Codex Image2 工作流,以及显式选择的 OpenAI API 工作流
 
@@ -31,6 +35,7 @@
 - Node.js 20 或更高版本
 - Python 3.10 或更高版本
 - FFmpeg,且 `ffmpeg`、`ffprobe` 可从终端调用
+- `edge-tts`（需要自动生成配音时：`python3 -m pip install edge-tts`）
 - npm
 - Google Chrome,或由 Remotion 管理的兼容浏览器
 - 支持 Skill 的 Agent 运行时(Codex、Claude Code、Kimi Code 等)
@@ -72,7 +77,7 @@ export STORY_VIDEO_PROJECT=/absolute/path/to/story-to-handdrawn-video
 **故事文本 → 手绘动画**(Skill 的默认提示词):
 
 ```text
-使用 $story-to-handdrawn-video 把这段故事生成可后期配音的手绘动画。
+使用 $story-to-handdrawn-video 把这段故事生成带连续配音和有声封面的手绘动画成片。
 
 <在这里粘贴故事文本>
 ```
@@ -108,7 +113,24 @@ export STORY_VIDEO_PROJECT=/absolute/path/to/story-to-handdrawn-video
 - 故事文本默认一个完整句子一个节拍;想控制节奏,直接在故事里按句分行即可。
 - 遇到时间跳跃、指代不明、医疗场景或年龄敏感角色时,建议先让 Agent 给出视觉规划(两位场景编号为键的 JSON),确认后再生成。
 - 默认使用 Codex Image2 生成图片;只有明确要求时才会走 OpenAI API(需 `OPENAI_API_KEY`)。
-- 输出是静音画面轨,配音和 BGM 属于后期工作。
+- 先验收静音画面母版，再建立连续配音和有声封面；不要用逐镜头 TTS 或逐句变速。
+
+生成封面、连续配音和最终发布版：
+
+```bash
+npm run render:cover
+python3 scripts/build_story_audio.py \
+  --config examples/voiceover.example.json \
+  --output-dir out/voiceover/v01
+python3 scripts/audit_story_delivery.py \
+  out/voiceover/v01/episode_release_with_cover.mp4 \
+  --master out/voiceover/v01/narration-master.wav \
+  --build out/voiceover/v01/build.json \
+  --sync-map out/voiceover/v01/sync-map.json \
+  --cover-duration 2.7
+```
+
+示例配置只展示结构；请按真实分镜填写每组 `scene_ids`、`start_sec` 和 `speech_text`。一组旁白一次合成，组内不切句、不逐句变速。
 
 ### 输出契约
 
@@ -118,9 +140,13 @@ export STORY_VIDEO_PROJECT=/absolute/path/to/story-to-handdrawn-video
 | 故事文本 | 预览 | `out/picture_silent-preview.mp4` |
 | 上传图片 | 正式 | `out/uploaded_picture_silent.mp4` |
 | 上传图片 | 预览 | `out/uploaded_picture_silent-preview.mp4` |
+| 配音 | 无封面审片版 | `out/voiceover/<version>/episode_with_voiceover.mp4` |
+| 配音 | 有声封面发布版 | `out/voiceover/<version>/episode_release_with_cover.mp4` |
 
 - 分辨率:正式 1080×1440,预览 720×960
-- 编码:H.264,静音
+- 画面母版:H.264,静音
+- 旁白母版:48 kHz / 24-bit PCM / mono，默认约 -16 LUFS、真峰值不高于 -1.5 dBTP
+- 发布版:H.264 + 48 kHz stereo AAC；封面时段可听，主画面与故事旁白同一时刻开始
 
 Skill 的完整行为约定见 [skill-package/story-to-handdrawn-video/SKILL.md](skill-package/story-to-handdrawn-video/SKILL.md)。
 
@@ -157,7 +183,7 @@ Skill 的完整行为约定见 [skill-package/story-to-handdrawn-video/SKILL.md]
 
 ## English
 
-Convert Chinese story copy — or ordered hand-drawn images — into a 3:4 vertical **hand-drawn diary-comic animation**: handwritten captions, left-to-right `text → bw plate → color illustration` reveals, an optional bottom-right page-curl flip transition, and safe uncropped framing. Built on [Remotion](https://www.remotion.dev/); outputs a silent H.264 picture track ready for post-production voiceover.
+Convert story copy—or ordered hand-drawn images—into a 3:4 vertical **hand-drawn diary-comic release** with handwritten captions, natural continuous camera motion, left-to-right `text → bw plate → color illustration` reveals, an audible non-white cover, and connected narration groups. Built on [Remotion](https://www.remotion.dev/) and FFmpeg; it preserves separate silent-picture, voiced-review, and public-release masters.
 
 This repo contains:
 
@@ -166,7 +192,7 @@ This repo contains:
 
 ### Requirements
 
-- Node.js 20+, Python 3.10+, npm
+- Node.js 20+, Python 3.10+, npm, and `edge-tts` when narration generation is needed
 - FFmpeg (`ffmpeg` and `ffprobe` on PATH)
 - Google Chrome or a Remotion-managed compatible browser
 - An agent runtime with skill support (Codex, Claude Code, Kimi Code, …)
@@ -208,7 +234,7 @@ Everything is driven in natural language; sentence splitting, storyboarding, ima
 Story text → animation (the skill's default prompt):
 
 ```text
-使用 $story-to-handdrawn-video 把这段故事生成可后期配音的手绘动画。
+使用 $story-to-handdrawn-video 把这段故事生成带连续配音和有声封面的手绘动画成片。
 
 <paste your story here>
 ```
@@ -233,7 +259,7 @@ Preview first (720×960, before committing to a full render):
 使用 $story-to-handdrawn-video 先给这个故事生成一个预览版。
 ```
 
-Notes: one complete sentence per beat by default; Codex Image2 is the default image generator (the OpenAI API path is only used when explicitly requested and requires `OPENAI_API_KEY`); output is a silent picture track — voiceover and BGM are post-production.
+Notes: one complete sentence per beat by default; Codex Image2 is the default image generator. Approve the silent master first, then use `scripts/build_story_audio.py` with an episode config. Narration is synthesized as connected acts; VTT timestamps measure sync but never cut prose into sentence clips.
 
 ### Outputs
 
@@ -243,8 +269,10 @@ Notes: one complete sentence per beat by default; Codex Image2 is the default im
 | Story text | preview | `out/picture_silent-preview.mp4` |
 | Uploaded images | final | `out/uploaded_picture_silent.mp4` |
 | Uploaded images | preview | `out/uploaded_picture_silent-preview.mp4` |
+| Narrated review | no cover | `out/voiceover/<version>/episode_with_voiceover.mp4` |
+| Public release | audible cover | `out/voiceover/<version>/episode_release_with_cover.mp4` |
 
-Final 1080×1440, preview 720×960, H.264, silent. The full behavior contract lives in [SKILL.md](skill-package/story-to-handdrawn-video/SKILL.md).
+Final picture is 1080×1440 H.264; preview is 720×960. Narration defaults to a 48 kHz PCM master around -16 LUFS and a stereo AAC release. The full behavior contract lives in [SKILL.md](skill-package/story-to-handdrawn-video/SKILL.md).
 
 ### License
 

@@ -36,10 +36,7 @@ export const LayerWipe: React.FC<LayerWipeProps> = ({
       style={{
         position: 'absolute',
         zIndex,
-        left: 74,
-        right: 74,
-        top: 382,
-        bottom: 42,
+        inset: 0,
         clipPath,
         opacity,
       }}

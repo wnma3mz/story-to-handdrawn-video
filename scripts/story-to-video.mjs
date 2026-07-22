@@ -37,6 +37,13 @@ const sourceText = args.input
   ? readFileSync(resolve(root, String(args.input)), 'utf8')
   : String(args.text);
 const title = String(args.title || '手绘故事');
+const cover = {
+  series_title: String(args['series-title'] || '手绘故事 · 动画'),
+  ...(args['episode-label'] ? {episode_label: String(args['episode-label'])} : {}),
+  ...(args['episode-number'] ? {episode_number: String(args['episode-number'])} : {}),
+  ...(args['cover-title'] ? {title: String(args['cover-title'])} : {}),
+  ...(args['cover-background'] ? {background: String(args['cover-background'])} : {}),
+};
 const textMode = String(args['text-mode'] || 'font');
 const visualPlanPath = args['visual-plan']
   ? resolve(root, String(args['visual-plan']))
@@ -205,18 +212,32 @@ const safeTitle =
     .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 32) || 'story';
+const illustrationPlan = Object.fromEntries(
+  Object.entries(visualPlan).map(([id, entry]) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      return [id, entry];
+    }
+    return [id, {
+      visual: entry.visual,
+      shot_type: entry.shot_type,
+      focus: entry.focus,
+    }];
+  }),
+);
 const hashInput = [
-  generator === 'codex' ? 'codex-character-sheet-v3' : 'api-v1',
+  generator === 'codex' ? 'codex-illustration-v4' : 'api-v2',
   title,
   textMode,
-  transition,
-  transitionSec,
   characterLock,
-  JSON.stringify(visualPlan),
+  JSON.stringify(illustrationPlan),
   sourceText,
 ].join('\n');
 const storyHash = createHash('sha256').update(hashInput).digest('hex').slice(0, 8);
-const assetSet = `${safeTitle}-${storyHash}`;
+const requestedAssetSet = args['asset-set'] ? String(args['asset-set']) : null;
+if (requestedAssetSet && !/^[\p{Letter}\p{Number}._-]+$/u.test(requestedAssetSet)) {
+  throw new Error('--asset-set may contain only letters, numbers, dots, underscores, and hyphens');
+}
+const assetSet = requestedAssetSet || `${safeTitle}-${storyHash}`;
 
 const referenceBw = resolve(root, 'references/style-bw.png');
 const referenceColor = resolve(root, 'references/style-color.png');
@@ -311,10 +332,17 @@ const codexJobs = [];
 
 let codexCharacterReference = null;
 if (generator === 'codex') {
-  codexCharacterReference = absoluteAsset('00_character_reference.png');
-  const characterPrompt = writePrompt(
-    '00_character_reference.txt',
-    `Use case: illustration-story
+  const suppliedCharacterReference = args['character-reference']
+    ? resolve(root, String(args['character-reference']))
+    : null;
+  if (suppliedCharacterReference && !existsSync(suppliedCharacterReference)) {
+    throw new Error(`Missing supplied character reference: ${suppliedCharacterReference}`);
+  }
+  codexCharacterReference = suppliedCharacterReference || absoluteAsset('00_character_reference.png');
+  if (!suppliedCharacterReference) {
+    const characterPrompt = writePrompt(
+      '00_character_reference.txt',
+      `Use case: illustration-story
 Asset type: fixed protagonist character reference sheet for a hand-drawn Chinese diary-comic video
 Input images: the supplied black-and-white and color frames are style references only. Ignore their people, composition and Chinese text.
 Primary request: draw ONLY the recurring protagonists described below. Show each protagonist in two simple full-body poses, front view and three-quarter view, arranged side by side.
@@ -323,15 +351,16 @@ Style: ${styleLock}
 Composition: pure white square canvas, all uncropped full-body poses centered with generous spacing and a clean 10% safe border. No scenery, furniture, extra people, props or decorative marks.
 Color: selective muted wax-crayon color only. Follow the clothing colors in the character lock, use black scribbles for hair and dark trousers, and leave skin and most of the canvas white.
 Constraints: this is an identity reference only; no text, letters, numbers, labels, captions, speech bubbles, logo, signature or watermark; no realistic shading, gradients or vector cleanliness.`,
-  );
-  codexJobs.push({
-    id: 'character_reference',
-    role: 'reference',
-    prompt_file: characterPrompt,
-    prompt: readFileSync(characterPrompt, 'utf8').trim(),
-    output_master: codexCharacterReference,
-    references: [referenceBw, referenceColor],
-  });
+    );
+    codexJobs.push({
+      id: 'character_reference',
+      role: 'reference',
+      prompt_file: characterPrompt,
+      prompt: readFileSync(characterPrompt, 'utf8').trim(),
+      output_master: codexCharacterReference,
+      references: [referenceBw, referenceColor],
+    });
+  }
 }
 
 for (let index = 0; index < storyParts.length; index += 1) {
@@ -341,10 +370,24 @@ for (let index = 0; index < storyParts.length; index += 1) {
   const bwName = `${id}_bw.png`;
   const colorName = `${id}_color.png`;
   const masterName = `${id}_master.png`;
-  const caption = formatCaption(text);
-  const visualDirection = String(
-    visualPlan[id] || 'Stage one simple visual beat that expresses only the current sentence.',
+  const visualPlanEntry = visualPlan[id];
+  const structuredVisualPlan =
+    visualPlanEntry && typeof visualPlanEntry === 'object' && !Array.isArray(visualPlanEntry)
+      ? visualPlanEntry
+      : {};
+  const caption = String(
+    structuredVisualPlan.caption || formatCaption(text),
   );
+  const visualDirection = String(
+    structuredVisualPlan.visual ||
+      visualPlanEntry ||
+      'Stage one simple visual beat that expresses only the current sentence.',
+  );
+  const shotType = String(structuredVisualPlan.shot_type || 'story_beat');
+  const focus = String(structuredVisualPlan.focus || 'center');
+  const motion = String(structuredVisualPlan.motion || 'hold');
+  const sceneTransition = String(structuredVisualPlan.transition || 'cut');
+  const plannedDuration = Number(structuredVisualPlan.duration_sec);
   const usesImage2Text = textMode === 'image2';
   const masterSize = usesImage2Text ? '1024x1536' : '1024x1024';
   const captionPanel = usesImage2Text
@@ -363,10 +406,12 @@ Use thick casual black felt-tip handwriting, 1–3 lines only, generous 48-pixel
   const masterPrompt = writePrompt(
     `${id}_master.txt`,
     `Use case: illustration-story
-Asset type: one vertical production master for a hand-drawn Chinese diary-comic video. This single output will be locally split into a handwritten caption plate and a color illustration plate.
+Asset type: ${usesImage2Text ? 'one vertical production master that will be split into a handwritten caption plate and a color illustration plate' : 'one square color illustration master'} for a hand-drawn Chinese diary-comic video.
 Input images: the supplied original-video frames are style references${hasContinuityReference ? '; the fixed protagonist character sheet is the identity reference' : ''}. Ignore all text in references.
 Narrative sentence to illustrate: "${text}"
 Scene direction: ${visualDirection}
+Narrative shot type: ${shotType}
+Primary focal area: ${focus}
 Create one concrete, immediately readable tableau for that sentence. Use the locked recurring protagonists whenever the current sentence requires them.
 Character lock: ${characterLock}
 Style: ${styleLock}
@@ -462,11 +507,17 @@ Constraints: non-graphic, emotionally restrained family storytelling; no visible
 
   scenes.push({
     id,
-    duration_sec: durationFor(caption),
+    duration_sec:
+      Number.isFinite(plannedDuration) && plannedDuration >= 2 && plannedDuration <= 15
+        ? plannedDuration
+        : durationFor(caption),
     text: caption,
     narration: text,
-    visual: `根据文案绘制一个单一、清楚、可画的白底日记漫画场景：${text}`,
-    shot: 'story_beat',
+    visual: visualDirection,
+    shot: shotType,
+    focus,
+    motion,
+    transition_to_next: sceneTransition,
     layers: ['text', 'bw_full', 'color'],
     color_hint: '仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白',
     detail_hint: null,
@@ -496,8 +547,9 @@ const storyboard = {
     transition_sec: transitionSec,
     style_lock: styleLock,
     character_lock: characterLock,
+    cover,
     audio: {
-      voiceover: 'post',
+      voiceover: 'continuous_groups',
       bgm: 'optional_bed_only',
       bgm_follows_text: false,
     },

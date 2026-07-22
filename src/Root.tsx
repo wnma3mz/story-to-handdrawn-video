@@ -1,4 +1,5 @@
 import {Composition} from 'remotion';
+import {EpisodeCover} from './EpisodeCover';
 import {StoryVideo} from './StoryVideo';
 import {storyboard, totalFrames} from './storyboard';
 import {UploadedStoryVideo} from './UploadedStoryVideo';
@@ -16,6 +17,15 @@ export const RemotionRoot: React.FC = () => {
         id="PictureSilent"
         component={StoryVideo}
         durationInFrames={totalFrames}
+        fps={project.fps}
+        width={project.width}
+        height={project.height}
+        defaultProps={{}}
+      />
+      <Composition
+        id="EpisodeCover"
+        component={EpisodeCover}
+        durationInFrames={1}
         fps={project.fps}
         width={project.width}
         height={project.height}

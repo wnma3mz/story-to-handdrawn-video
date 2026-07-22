@@ -7,6 +7,17 @@ export type SceneData = {
   narration?: string;
   visual: string;
   shot: string;
+  focus?: 'center' | 'left' | 'right' | 'top' | 'bottom' | string;
+  motion?:
+    | 'hold'
+    | 'push_soft'
+    | 'push_left'
+    | 'push_right'
+    | 'pull_soft'
+    | 'pan_left'
+    | 'pan_right'
+    | string;
+  transition_to_next?: 'cut' | 'fade' | string;
   layers: LayerId[];
   color_hint: string | null;
   detail_hint: string | null;
@@ -39,8 +50,20 @@ export type Storyboard = {
     transition_sec?: number;
     style_lock: string;
     character_lock: string;
+    cover?: {
+      series_title?: string;
+      episode_label?: string;
+      episode_number?: string;
+      title?: string;
+      background?: string;
+      accent?: string;
+      dark_accent?: string;
+      badge?: string;
+      card?: string;
+      foreground?: string;
+    };
     audio: {
-      voiceover: 'post';
+      voiceover: 'post' | 'continuous_groups';
       bgm: 'optional_bed_only';
       bgm_follows_text: false;
     };

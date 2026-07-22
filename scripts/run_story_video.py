@@ -38,6 +38,11 @@ def parse_args() -> argparse.Namespace:
         help="Uploaded comic pages or full-frame images, in playback order",
     )
     parser.add_argument("--title", default="手绘故事")
+    parser.add_argument("--series-title", default="手绘故事 · 动画")
+    parser.add_argument("--episode-label")
+    parser.add_argument("--episode-number")
+    parser.add_argument("--cover-title")
+    parser.add_argument("--cover-background", help="Non-white CSS color, for example #5E7468")
     parser.add_argument("--character-lock")
     parser.add_argument("--visual-plan", type=Path)
     parser.add_argument(
@@ -47,6 +52,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--generator", choices=("codex", "api"), default="codex")
     parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--asset-set")
+    parser.add_argument("--character-reference", type=Path)
     parser.add_argument("--text-mode", choices=("image2", "font"), default="font")
     parser.add_argument("--transition", choices=("cut", "page-flip"), default="cut")
     parser.add_argument("--transition-sec", type=float, default=0.7)
@@ -153,6 +160,8 @@ def main() -> None:
     command += [
         "--title",
         args.title,
+        "--series-title",
+        args.series_title,
         "--text-mode",
         args.text_mode,
         "--generator",
@@ -162,12 +171,27 @@ def main() -> None:
         "--transition-sec",
         str(args.transition_sec),
     ]
+    for option, value in (
+        ("--episode-label", args.episode_label),
+        ("--episode-number", args.episode_number),
+        ("--cover-title", args.cover_title),
+        ("--cover-background", args.cover_background),
+    ):
+        if value:
+            command += [option, value]
     if args.character_lock:
         command += ["--character-lock", args.character_lock]
     if args.visual_plan:
         command += ["--visual-plan", str(args.visual_plan.expanduser().resolve())]
     if args.manifest:
         command += ["--manifest", str(args.manifest.expanduser().resolve())]
+    if args.asset_set:
+        command += ["--asset-set", args.asset_set]
+    if args.character_reference:
+        command += [
+            "--character-reference",
+            str(args.character_reference.expanduser().resolve()),
+        ]
 
     if args.mode in {"generate", "full"}:
         command.append("--generate")

@@ -8,6 +8,16 @@ const storyboardFiles = files.length > 0
   ? files
   : ['storyboard.json', 'storyboard.uploaded.json'];
 
+const allowedMotions = new Set([
+  'hold',
+  'push_soft',
+  'push_left',
+  'push_right',
+  'pull_soft',
+  'pan_left',
+  'pan_right',
+]);
+
 const pngDimensions = (path) => {
   if (!path.toLowerCase().endsWith('.png')) return null;
   const bytes = readFileSync(path);
@@ -40,11 +50,15 @@ const validate = (file) => {
   if (!Number.isFinite(project.fps) || project.fps <= 0) {
     errors.push('project.fps must be positive');
   }
-  if (project.audio?.voiceover !== 'post') {
-    errors.push('audio.voiceover must be post');
+  if (!['post', 'continuous_groups'].includes(project.audio?.voiceover)) {
+    errors.push('audio.voiceover must be post or continuous_groups');
   }
   if (project.audio?.bgm_follows_text !== false) {
     errors.push('audio.bgm_follows_text must be false');
+  }
+  const coverBackground = String(project.cover?.background || '').toLowerCase();
+  if (['#fff', '#ffffff', 'white', 'rgb(255,255,255)'].includes(coverBackground.replaceAll(' ', ''))) {
+    errors.push('project.cover.background must not be white');
   }
   if (project.mode === 'speed') {
     if (project.images_per_scene !== 1) {
@@ -68,6 +82,9 @@ const validate = (file) => {
     ids.add(scene.id);
     if (!Number.isFinite(scene.duration_sec) || scene.duration_sec <= 0) {
       errors.push(`${label}: duration must be positive`);
+    }
+    if (scene.motion && !allowedMotions.has(scene.motion)) {
+      errors.push(`${label}: unsupported motion ${JSON.stringify(scene.motion)}`);
     }
     if (typeof scene.text !== 'string') {
       errors.push(`${label}: text must be a string`);

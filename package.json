@@ -1,7 +1,7 @@
 {
   "name": "story-to-handdrawn-video",
   "version": "1.0.0",
-  "description": "Turn Chinese stories or uploaded comic pages into silent hand-drawn Remotion videos.",
+  "description": "Turn stories or uploaded comic pages into narrated hand-drawn videos with natural motion, audible covers, and delivery QC.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -20,11 +20,15 @@
     "import:uploaded": "node scripts/import-uploaded-pages.mjs",
     "render": "remotion render src/index.ts PictureSilent out/picture_silent.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p --muted --concurrency=1",
     "render:preview": "remotion render src/index.ts PictureSilent out/picture_silent-preview.mp4 --codec=h264 --crf=23 --pixel-format=yuv420p --muted --scale=0.6666666666666666 --concurrency=1",
+    "render:cover": "remotion still src/index.ts EpisodeCover out/cover.png",
+    "build:audio": "python3 scripts/build_story_audio.py",
+    "audit:delivery": "python3 scripts/audit_story_delivery.py",
     "render:uploaded": "remotion render src/index.ts UploadedPictureSilent out/uploaded_picture_silent.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p --muted --concurrency=1",
     "render:uploaded:preview": "remotion render src/index.ts UploadedPictureSilent out/uploaded_picture_silent-preview.mp4 --codec=h264 --crf=23 --pixel-format=yuv420p --muted --scale=0.6666666666666666 --concurrency=1",
     "check": "npm run check:types && npm run check:storyboard",
     "check:types": "tsc --noEmit",
-    "check:storyboard": "node scripts/validate-storyboard.mjs storyboard.json storyboard.uploaded.json"
+    "check:storyboard": "node scripts/validate-storyboard.mjs storyboard.json",
+    "check:uploaded": "node scripts/validate-storyboard.mjs storyboard.uploaded.json"
   },
   "dependencies": {
     "@remotion/cli": "4.0.487",

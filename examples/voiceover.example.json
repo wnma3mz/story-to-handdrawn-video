@@ -1,0 +1,33 @@
+{
+  "profile": {
+    "backend": "edge-tts",
+    "voice": "zh-CN-XiaoxiaoNeural",
+    "rate": "-8%",
+    "pitch": "-1Hz",
+    "volume": "+0%"
+  },
+  "continuity": {
+    "minimum_group_gap_sec": 0.35,
+    "maximum_group_gap_sec": 0.8,
+    "minimum_final_tail_sec": 0.5,
+    "maximum_sync_error_sec": 0.6,
+    "groups": [
+      {
+        "id": "G01_opening",
+        "scene_ids": ["01", "02", "03"],
+        "start_sec": 0.15,
+        "whole_group_tempo": 1.0,
+        "speech_text": "第一幕的旁白。第二幕的旁白。第三幕的旁白。"
+      }
+    ]
+  },
+  "cover": {
+    "duration_sec": 2.7,
+    "title_audio_text": "故事标题"
+  },
+  "mastering": {
+    "integrated_lufs": -16.0,
+    "true_peak_dbtp": -1.5,
+    "lra": 7.0
+  }
+}

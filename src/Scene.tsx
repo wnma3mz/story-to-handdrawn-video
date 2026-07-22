@@ -5,6 +5,7 @@ import {
   useVideoConfig,
 } from 'remotion';
 import {LayerWipe} from './LayerWipe';
+import {MotionStage} from './MotionStage';
 import {TextWipe} from './TextWipe';
 import type {SceneData} from './types';
 
@@ -36,35 +37,37 @@ export const Scene: React.FC<{scene: SceneData}> = ({scene}) => {
 
   return (
     <AbsoluteFill style={{backgroundColor: '#FFFFFF', overflow: 'hidden'}}>
-      {has('bw_full') && scene.assets.bw ? (
-        <LayerWipe
-          src={scene.assets.bw}
-          startFrame={at(speedMode ? 0.18 : 0.16)}
-          durationFrames={at(speedMode ? 0.4 : 0.32)}
-          zIndex={10}
-          treatment="bw"
-        />
-      ) : null}
+      <MotionStage scene={scene}>
+        {has('bw_full') && scene.assets.bw ? (
+          <LayerWipe
+            src={scene.assets.bw}
+            startFrame={at(speedMode ? 0.18 : 0.16)}
+            durationFrames={at(speedMode ? 0.4 : 0.32)}
+            zIndex={10}
+            treatment="bw"
+          />
+        ) : null}
 
-      {has('detail') && scene.assets.detail ? (
-        <LayerWipe
-          src={scene.assets.detail}
-          startFrame={at(0.48)}
-          durationFrames={at(0.17)}
-          zIndex={20}
-          treatment="detail"
-        />
-      ) : null}
+        {has('detail') && scene.assets.detail ? (
+          <LayerWipe
+            src={scene.assets.detail}
+            startFrame={at(0.48)}
+            durationFrames={at(0.17)}
+            zIndex={20}
+            treatment="detail"
+          />
+        ) : null}
 
-      {has('color') && scene.assets.color ? (
-        <LayerWipe
-          src={scene.assets.color}
-          startFrame={staticColor ? 0 : at(speedMode ? 0.52 : 0.65)}
-          durationFrames={staticColor ? 1 : at(speedMode ? 0.36 : 0.23)}
-          zIndex={30}
-          treatment="color"
-        />
-      ) : null}
+        {has('color') && scene.assets.color ? (
+          <LayerWipe
+            src={scene.assets.color}
+            startFrame={staticColor ? 0 : at(speedMode ? 0.52 : 0.65)}
+            durationFrames={staticColor ? 1 : at(speedMode ? 0.36 : 0.23)}
+            zIndex={30}
+            treatment="color"
+          />
+        ) : null}
+      </MotionStage>
 
       <TextWipe
         text={scene.text}
@@ -72,7 +75,6 @@ export const Scene: React.FC<{scene: SceneData}> = ({scene}) => {
         startFrame={0}
         durationFrames={at(speedMode ? 0.22 : 0.16)}
       />
-
     </AbsoluteFill>
   );
 };
