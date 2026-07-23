@@ -21,6 +21,7 @@
     "render": "remotion render src/index.ts PictureSilent out/picture_silent.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p --muted --concurrency=1",
     "render:preview": "remotion render src/index.ts PictureSilent out/picture_silent-preview.mp4 --codec=h264 --crf=23 --pixel-format=yuv420p --muted --scale=0.6666666666666666 --concurrency=1",
     "render:cover": "remotion still src/index.ts EpisodeCover out/cover.png",
+    "audit:motion": "python3 scripts/audit_motion_timeline.py",
     "build:audio": "python3 scripts/build_story_audio.py",
     "audit:delivery": "python3 scripts/audit_story_delivery.py",
     "render:uploaded": "remotion render src/index.ts UploadedPictureSilent out/uploaded_picture_silent.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p --muted --concurrency=1",

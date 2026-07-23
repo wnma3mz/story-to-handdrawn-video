@@ -18,7 +18,7 @@ Read `references/motion-sop.md` completely before assigning motion or rendering 
 2. For a series, freeze a continuity bible: chronology, recurring character appearance, world state, object ownership, visual style, aspect ratio, caption rules, and narrator intent.
 3. Preserve meaning and chronology. Use one complete sentence per beat by default; split only at natural narrative turns. For an explicitly planned episode, keep one non-empty source line per scene, create a complete consecutive two-digit scene-keyed visual plan, and pass `--scene-contract`. Put the full spoken thought in the source line and a shorter 1–3 line screen copy in `caption`; every entry also needs `duration_sec` within 2–15 seconds. Without the explicit flag, keep the established automatic splitter.
 4. Generate/import illustrations. Inspect every original at full resolution and preserve rejected attempts with reasons. Keep all critical marks inside the safe border, use contained framing, and never crop recurring characters or clues. For white-field masters, run `scripts/audit-illustration-masters.py` to prove the final border with the exact bounding box of every pixel that is not `#FFFFFF`; darkness, alpha, and near-white thresholds are rough diagnostics only because they can miss pale water, sand, roofs, and antialiased marks. Unless the project specifies a stricter value, keep every meaningful mark at least 10% of the canvas away from every edge.
-5. Assign one motivated, renderer-supported motion per continuous image interval. Do not restart a path while the same image stays onscreen. Use settled shots as well as gentle pushes, pulls, or pans. Run both the timeline audit and the renderer's own validator against the exact episode-local storyboard before preview rendering.
+5. Assign one motivated, renderer-supported motion per continuous image interval. Do not restart a path while the same image stays onscreen. Use settled shots as well as gentle pushes, pulls, or pans. Run `scripts/audit_motion_timeline.py` and the renderer's own validator against the exact episode-local storyboard before preview rendering. The audit accepts only `hold`, `push_soft`, `push_left`, `push_right`, `pull_soft`, `pan_left`, and `pan_right`; never substitute generic `push` or `pull`.
 6. Render and approve `picture_silent.mp4` first. Never overwrite it during audio work.
 7. Render `cover.png` from the code-based `EpisodeCover` composition. Use a deliberate non-white dominant background and exact typeset title text. Inspect long-title wrapping and reject a one- or two-character orphan line.
 8. Choose the narrator from the listening relationship. A/B at least two voices on both an opening and a later explanatory/emotional passage, then freeze one profile per series.
@@ -37,6 +37,17 @@ python3 scripts/audit-illustration-masters.py \
   '/absolute/episode/candidates/scene-*/candidate-*.png' \
   --json-report /absolute/episode/review/illustration-gate.json
 ```
+
+Audit the episode-local motion timeline before import or preview:
+
+```bash
+python3 scripts/audit_motion_timeline.py \
+  /absolute/episode/motion-timeline.tsv \
+  --expected-duration 266.061
+node scripts/validate-storyboard.mjs /absolute/episode/storyboard.json
+```
+
+The numeric duration above is illustrative; pass the episode's actual planned duration. Both checks must pass. The Python audit deliberately shares the renderer's exact seven-motion vocabulary so an unsupported generic label cannot receive an auxiliary `PASS`.
 
 Plan text without image generation:
 

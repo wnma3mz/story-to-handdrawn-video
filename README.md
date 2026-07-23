@@ -117,6 +117,17 @@ export STORY_VIDEO_PROJECT=/absolute/path/to/story-to-handdrawn-video
 - 默认使用 Codex Image2 生成图片;只有明确要求时才会走 OpenAI API(需 `OPENAI_API_KEY`)。
 - 先验收静音画面母版，再建立连续配音和有声封面；不要用逐镜头 TTS 或逐句变速。
 
+导入或预览前先审计本集运动时间线，并再跑渲染器自身校验：
+
+```bash
+python3 scripts/audit_motion_timeline.py \
+  /absolute/episode/motion-timeline.tsv \
+  --expected-duration <本集实际秒数>
+node scripts/validate-storyboard.mjs /absolute/episode/storyboard.json
+```
+
+审计器与渲染器统一只接受 `hold`、`push_soft`、`push_left`、`push_right`、`pull_soft`、`pan_left`、`pan_right`；旧的泛化标签 `push`、`pull` 会直接失败。
+
 生成封面、连续配音和最终发布版：
 
 ```bash
@@ -261,7 +272,7 @@ Preview first (720×960, before committing to a full render):
 使用 $story-to-handdrawn-video 先给这个故事生成一个预览版。
 ```
 
-Notes: one complete sentence per beat by default; Codex Image2 is the default image generator. For exact one-line-per-scene planning, pass `--scene-contract` with a consecutive `01..NN` visual plan covering every non-empty source line. Each entry must include a 1–3 line `caption` and `duration_sec` in `2..15`; without the flag, the established automatic sentence splitter remains active. Keep the full spoken thought in the source line and the shorter screen copy in `caption`. For parallel episodes, pair an episode-specific `--output` with its `--manifest` so later planning cannot redirect an earlier import. Approve the silent master first, then use `scripts/build_story_audio.py` with an episode config. Narration is synthesized as connected acts; VTT timestamps measure sync but never cut prose into sentence clips.
+Notes: one complete sentence per beat by default; Codex Image2 is the default image generator. For exact one-line-per-scene planning, pass `--scene-contract` with a consecutive `01..NN` visual plan covering every non-empty source line. Each entry must include a 1–3 line `caption` and `duration_sec` in `2..15`; without the flag, the established automatic sentence splitter remains active. Keep the full spoken thought in the source line and the shorter screen copy in `caption`. For parallel episodes, pair an episode-specific `--output` with its `--manifest` so later planning cannot redirect an earlier import. Before import or preview, run `python3 scripts/audit_motion_timeline.py <timeline> --expected-duration <seconds>` and the renderer's storyboard validator. The audit deliberately accepts only the same seven motions as the renderer: `hold`, `push_soft`, `push_left`, `push_right`, `pull_soft`, `pan_left`, and `pan_right`. Approve the silent master first, then use `scripts/build_story_audio.py` with an episode config. Narration is synthesized as connected acts; VTT timestamps measure sync but never cut prose into sentence clips.
 
 ### Outputs
 
