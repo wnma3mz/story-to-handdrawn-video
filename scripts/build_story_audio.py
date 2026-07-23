@@ -286,7 +286,7 @@ def main() -> int:
     run([
         "ffmpeg", "-y", "-v", "error", "-i", str(args.picture), "-i", str(master),
         "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-        "-ar", "48000", "-ac", "2", "-shortest", str(voiced),
+        "-ar", "48000", "-ac", "2", str(voiced),
     ])
 
     cover_cfg = config.get("cover") or config.get("release", {})

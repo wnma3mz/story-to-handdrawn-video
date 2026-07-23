@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve every copied picture packet in the no-cover voiced master when the
+  narration and frame-grid durations differ by less than one frame.
+
 ## [1.0.0] - 2026-07-21
 
 ### Added

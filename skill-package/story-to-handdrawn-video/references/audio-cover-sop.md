@@ -77,7 +77,7 @@ House defaults:
 - release AAC: stereo, 48 kHz, 192 kb/s;
 - audio/picture duration mismatch no greater than 50 ms.
 
-Apply filtering, compression, and loudness processing consistently to the whole narration timeline. For the no-cover voiced master, copy the approved picture stream when possible.
+Apply filtering, compression, and loudness processing consistently to the whole narration timeline. For the no-cover voiced master, copy the approved picture stream when possible. Do not end that mux with FFmpeg `-shortest`: a sub-frame audio/picture rounding difference can otherwise discard the final video packet. Let the complete picture stream determine the container duration, and keep the narration-master duration difference within 50 ms.
 
 ## Acceptance gates
 
