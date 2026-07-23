@@ -17,7 +17,11 @@ export type SceneData = {
     | 'pan_left'
     | 'pan_right'
     | string;
-  transition_to_next?: 'cut' | 'fade' | string;
+  /**
+   * Omitted legacy values are interpreted as a direct cut. A fade is an
+   * outgoing overlay on the next scene and cannot be combined with page-flip.
+   */
+  transition_to_next?: 'cut' | 'fade';
   layers: LayerId[];
   color_hint: string | null;
   detail_hint: string | null;

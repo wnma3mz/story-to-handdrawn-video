@@ -23,6 +23,7 @@
 - 本地生成与彩色插画对齐的黑白层
 - `文字 → 黑白画稿 → 彩色插画` 从左到右揭示
 - 按叙事目的选择轻推、轻拉、平移或静止，避免同图运镜重置和机械抖动
+- 支持逐镜 `cut` / `fade`；淡出层冻结在本镜最后一帧并覆盖下一镜开头，不改变总时长
 - 可选右下角卷页翻书转场(纸背保留淡化的原页纹理)
 - 可配置的非白底系列封面，标题由代码精确排版并带可听见的标题音频
 - 3–6 个连续叙事组配音，VTT 只用于同步测量，不切碎句子
@@ -129,6 +130,13 @@ node scripts/validate-storyboard.mjs /absolute/episode/storyboard.json
 
 审计器与渲染器统一只接受 `hold`、`push_soft`、`push_left`、`push_right`、`pull_soft`、`pan_left`、`pan_right`；旧的泛化标签 `push`、`pull` 会直接失败。
 插画尚未生成的规划阶段可加 `--allow-missing-assets`，只校验结构、时长、层级和运镜；正式导入、预览和交付前必须去掉该参数，恢复素材存在性与尺寸检查。
+
+逐镜转场遵循一个明确契约：`transition_to_next` 缺省时按 `cut` 处理；`fade`
+使用 `project.transition_sec`（默认 0.7 秒，允许 0.5–0.9 秒），把已经完成
+运镜的出镜画面冻结在本镜最后一帧，再叠在下一镜开头平滑淡出。下一镜的
+起点、整集总帧数和旁白时间轴均不移动；淡出最多占下一镜的 45%。项目级
+`page-flip` 与任何逐镜 `fade` 属于两个互斥的转场系统，校验器会直接拒绝
+混用。`npm run check` 会同时执行这套通用 layer-plan 边界测试。
 
 如果原始生成图在全分辨率语义审查中已经通过，但背景只是“近白”而非精确
 `#FFFFFF`，先保留原图，再做全画布机械归一化；它不能用于修复裁断、错误
@@ -291,6 +299,16 @@ Preview first (720×960, before committing to a full render):
 ```
 
 Notes: one complete sentence per beat by default; Codex Image2 is the default image generator. For exact one-line-per-scene planning, pass `--scene-contract` with a consecutive `01..NN` visual plan covering every non-empty source line. Each entry must include a 1–3 line `caption` and `duration_sec` in `2..15`; without the flag, the established automatic sentence splitter remains active. Keep the full spoken thought in the source line and the shorter screen copy in `caption`. When an episode introduces only one new recurring character, pass a narrow brief with `--character-reference-prompt`; the broader `--character-lock` remains continuity context and no longer expands the reference-sheet cast. For parallel episodes, pair an episode-specific `--output` with its `--manifest` so later planning cannot redirect an earlier import. Preserve and inspect every untouched illustration original. If a semantic PASS has only a near-white generated field, `scripts/normalize-illustration-master.py` may perform whole-frame normalization, uniform downscale, and exact-white centering; it must never rescue a cropped, semantically wrong, or identity-leaking image, and the derivative must still pass `scripts/audit-illustration-masters.py`. Before import or preview, run `python3 scripts/audit_motion_timeline.py <timeline> --expected-duration <seconds>` and the renderer's storyboard validator. During planning only, `validate-storyboard.mjs --allow-missing-assets <storyboard>` checks structure before illustrations exist; omit that flag for every import, preview, and delivery gate. The audit deliberately accepts only the same seven motions as the renderer: `hold`, `push_soft`, `push_left`, `push_right`, `pull_soft`, `pan_left`, and `pan_right`. Approve the silent master first, then use `scripts/build_story_audio.py` with an episode config. Narration is synthesized as connected acts; VTT timestamps measure sync but never cut prose into sentence clips. The example starts with the warm female `zh-CN-XiaoxiaoNeural` for intimate or allegorical Chinese narration, while `voice`, `rate`, `pitch`, and `volume` remain configurable and must be re-evaluated for a different genre, audience, or story relationship.
+
+Per-scene transitions use a strict contract. A missing
+`transition_to_next` means `cut`. A `fade` uses
+`project.transition_sec` (0.7 seconds by default; 0.5–0.9 allowed), freezes
+the completed outgoing scene on its nominal final frame, and fades that layer
+over the incoming scene without moving scene starts or changing the
+composition duration. The fade is capped at 45% of the incoming scene.
+Project-level `page-flip` and per-scene `fade` are mutually exclusive and the
+validator rejects a mixed timeline. `npm run check` includes the generic
+layer-plan boundary tests.
 
 ### Outputs
 

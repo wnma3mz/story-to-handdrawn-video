@@ -26,9 +26,10 @@
     "audit:delivery": "python3 scripts/audit_story_delivery.py",
     "render:uploaded": "remotion render src/index.ts UploadedPictureSilent out/uploaded_picture_silent.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p --muted --concurrency=1",
     "render:uploaded:preview": "remotion render src/index.ts UploadedPictureSilent out/uploaded_picture_silent-preview.mp4 --codec=h264 --crf=23 --pixel-format=yuv420p --muted --scale=0.6666666666666666 --concurrency=1",
-    "check": "npm run check:types && npm run check:storyboard",
+    "check": "npm run check:types && npm run check:storyboard && npm run check:transitions",
     "check:types": "tsc --noEmit",
     "check:storyboard": "node scripts/validate-storyboard.mjs storyboard.json",
+    "check:transitions": "node --test scripts/test-scene-transitions.mjs",
     "check:uploaded": "node scripts/validate-storyboard.mjs storyboard.uploaded.json"
   },
   "dependencies": {

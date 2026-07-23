@@ -1,6 +1,7 @@
 import {existsSync, readFileSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {transitionContractErrorsFor} from '../src/sceneTransitions.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const allowMissingAssets = process.argv.includes('--allow-missing-assets');
@@ -51,6 +52,7 @@ const validate = (file) => {
   if (!Number.isFinite(project.fps) || project.fps <= 0) {
     errors.push('project.fps must be positive');
   }
+  errors.push(...transitionContractErrorsFor(storyboard));
   if (!['post', 'continuous_groups'].includes(project.audio?.voiceover)) {
     errors.push('audio.voiceover must be post or continuous_groups');
   }

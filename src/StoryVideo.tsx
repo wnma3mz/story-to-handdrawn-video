@@ -1,12 +1,18 @@
 import {
   AbsoluteFill,
+  Freeze,
   Sequence,
-  Series,
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion';
 import {revealProgress} from './easing';
 import {Scene} from './Scene';
+import {
+  sceneContentFrameForLayerFrame,
+  sceneLayerOpacityForFrame,
+  sceneLayerPlanFor,
+  type SceneLayerPlan,
+} from './sceneTransitions.mjs';
 import {storyboard, transitionFramesFor} from './storyboard';
 import type {SceneData, Storyboard} from './types';
 
@@ -174,21 +180,42 @@ const PageFlipScene: React.FC<{
   );
 };
 
-const CutStoryVideo: React.FC<{value: Storyboard}> = ({value}) => (
-  <Series>
-    {value.scenes.map((scene) => (
-      <Series.Sequence
-        key={scene.id}
-        durationInFrames={Math.round(
-          scene.duration_sec * value.project.fps,
-        )}
-        name={`Scene ${scene.id}`}
-      >
-        <Scene scene={scene} />
-      </Series.Sequence>
-    ))}
-  </Series>
-);
+const PlannedSceneLayer: React.FC<{layer: SceneLayerPlan}> = ({layer}) => {
+  const frame = useCurrentFrame();
+  const opacity = sceneLayerOpacityForFrame(layer, frame);
+  const contentFrame = sceneContentFrameForLayerFrame(layer, frame);
+  const sceneContent = <Scene scene={layer.scene} />;
+
+  return (
+    <AbsoluteFill style={{opacity}}>
+      {contentFrame === frame ? (
+        sceneContent
+      ) : (
+        <Freeze frame={contentFrame}>{sceneContent}</Freeze>
+      )}
+    </AbsoluteFill>
+  );
+};
+
+const SceneTransitionStoryVideo: React.FC<{value: Storyboard}> = ({value}) => {
+  const layers = sceneLayerPlanFor(value);
+
+  return (
+    <AbsoluteFill style={{backgroundColor: '#fff'}}>
+      {layers.map((layer) => (
+        <Sequence
+          key={layer.scene.id}
+          from={layer.from}
+          durationInFrames={layer.sequenceDurationInFrames}
+          name={`Scene ${layer.scene.id} · ${layer.transitionToNext}`}
+          style={{zIndex: layer.zIndex}}
+        >
+          <PlannedSceneLayer layer={layer} />
+        </Sequence>
+      ))}
+    </AbsoluteFill>
+  );
+};
 
 const PageFlipStoryVideo: React.FC<{value: Storyboard}> = ({value}) => {
   const transitionFrames = transitionFramesFor(value);
@@ -229,7 +256,7 @@ export const StoryboardVideo: React.FC<{value: Storyboard}> = ({value}) =>
   value.project.transition === 'page-flip' && value.scenes.length > 1 ? (
     <PageFlipStoryVideo value={value} />
   ) : (
-    <CutStoryVideo value={value} />
+    <SceneTransitionStoryVideo value={value} />
   );
 
 export const StoryVideo: React.FC = () => <StoryboardVideo value={storyboard} />;
