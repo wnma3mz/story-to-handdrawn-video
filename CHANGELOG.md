@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add a reusable continuous-narration and audible-cover release workflow:
+  connected TTS groups, VTT-based semantic sync, configurable narrator profiles,
+  a 2.7-second non-white code-typeset cover with title audio, separate picture /
+  narration / voiced / release artifacts, and repeatable delivery QC.
+- Add acoustic-silence, zero-internal-cut, whole-group-tempo, cover audibility,
+  first-frame, same-offset, loudness, and full-decode gates, plus the documented
+  failure record that makes the accepted workflow portable across stories.
 - Accept an episode-specific `--character-reference-prompt` so a new reference
   sheet can stay narrowly scoped while the full continuity lock remains active.
 - Add a planning-only `--allow-missing-assets` storyboard validation mode; strict

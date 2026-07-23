@@ -17,6 +17,12 @@ Test at least two 20–40 second samples with identical text and timing. Include
 
 Record backend, voice ID, rate, pitch, volume, pronunciation choices, and intent. Do not direct emotion with shot-by-shot rate or pitch changes.
 
+The bundled example uses the warm female `zh-CN-XiaoxiaoNeural` as a useful
+starting profile for intimate or allegorical Chinese narration. Treat that as a
+configurable strategy, not a gender rule: keep `voice`, `rate`, `pitch`, and
+`volume` in configuration, and run the same normal-speed A/B gate again when a
+new story, genre, audience, or listening relationship calls for another voice.
+
 ## Continuous narration groups
 
 Organize an episode into 3–6 genuine acts. Submit each full act to TTS once. Save the raw media and its VTT. Remove only codec padding outside the group. Keep every internal pause. Place the whole waveform once on the picture timeline.
