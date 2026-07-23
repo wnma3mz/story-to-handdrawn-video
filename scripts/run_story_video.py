@@ -44,6 +44,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cover-title")
     parser.add_argument("--cover-background", help="Non-white CSS color, for example #5E7468")
     parser.add_argument("--character-lock")
+    parser.add_argument(
+        "--character-reference-prompt",
+        type=Path,
+        help=(
+            "Episode-specific brief for a newly generated character reference. "
+            "This limits the local reference job without weakening the full scene continuity lock."
+        ),
+    )
     parser.add_argument("--visual-plan", type=Path)
     parser.add_argument(
         "--scene-contract",
@@ -191,6 +199,11 @@ def main() -> None:
             command += [option, value]
     if args.character_lock:
         command += ["--character-lock", args.character_lock]
+    if args.character_reference_prompt:
+        command += [
+            "--character-reference-prompt",
+            str(args.character_reference_prompt.expanduser().resolve()),
+        ]
     if args.visual_plan:
         command += ["--visual-plan", str(args.visual_plan.expanduser().resolve())]
     if args.scene_contract:

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Accept an episode-specific `--character-reference-prompt` so a new reference
+  sheet can stay narrowly scoped while the full continuity lock remains active.
+- Add a planning-only `--allow-missing-assets` storyboard validation mode; strict
+  asset existence and dimension checks remain the default.
+
 ### Fixed
 
 - Preserve every copied picture packet in the no-cover voiced master when the

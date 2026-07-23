@@ -48,6 +48,7 @@ node scripts/validate-storyboard.mjs /absolute/episode/storyboard.json
 ```
 
 The numeric duration above is illustrative; pass the episode's actual planned duration. Both checks must pass. The Python audit deliberately shares the renderer's exact seven-motion vocabulary so an unsupported generic label cannot receive an auxiliary `PASS`.
+Before illustrations exist, `node scripts/validate-storyboard.mjs --allow-missing-assets /absolute/episode/storyboard.json` may be used as a planning-only structural gate. Remove the flag for import, preview, and delivery validation so missing assets and their dimensions are checked.
 
 Plan text without image generation:
 
@@ -64,6 +65,7 @@ python3 scripts/run_story_video.py \
   --series-title "系列名 · 手绘动画" \
   --episode-number 1 \
   --cover-background '#5E7468' \
+  --character-reference-prompt /absolute/episode/new-character-brief.txt \
   --visual-plan /absolute/episode/visual-plan.json \
   --scene-contract \
   --output /absolute/episode/storyboard.json \
@@ -81,7 +83,7 @@ python3 scripts/run_story_video.py --images /absolute/01.jpg /absolute/02.jpg --
 python3 scripts/run_story_video.py --images /absolute/01.jpg /absolute/02.jpg --mode full
 ```
 
-Use `--transition cut|page-flip`, `--layout auto|composite|full`, `--asset-set`, and `--character-reference` as needed. Reuse a reviewed character reference across episodes.
+Use `--transition cut|page-flip`, `--layout auto|composite|full`, `--asset-set`, and `--character-reference` as needed. Reuse a reviewed character reference across episodes. When only a subset of the episode continuity cast needs a new reference sheet, put that narrow cast-and-pose brief in `--character-reference-prompt`; keep the broader `--character-lock` intact as context, but do not let it silently expand the sheet.
 
 When episodes are prepared in parallel, never reuse the default generated storyboard path. Pair each episode-specific `--output` with its own `--manifest`; the manifest binds that exact storyboard for later import.
 

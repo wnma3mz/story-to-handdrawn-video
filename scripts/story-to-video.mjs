@@ -208,6 +208,15 @@ const characterLock = String(
   args['character-lock'] ||
     '重复出现的主角须保持同一张脸、发型、年龄、服装配色和身体比例；具体人物身份以故事原文为准；不得添加原文未提及的配角、道具或文字',
 );
+const characterReferencePromptPath = args['character-reference-prompt']
+  ? resolve(root, String(args['character-reference-prompt']))
+  : null;
+if (characterReferencePromptPath && !existsSync(characterReferencePromptPath)) {
+  throw new Error(`Missing character reference prompt: ${characterReferencePromptPath}`);
+}
+const characterReferenceBrief = characterReferencePromptPath
+  ? readFileSync(characterReferencePromptPath, 'utf8').trim()
+  : characterLock;
 
 const sourceParagraphs = sourceText
   .replace(/\r/g, '')
@@ -273,6 +282,7 @@ const hashInput = [
   title,
   textMode,
   characterLock,
+  characterReferenceBrief,
   JSON.stringify(illustrationPlan),
   sourceText,
 ].join('\n');
@@ -389,8 +399,11 @@ if (generator === 'codex') {
       `Use case: illustration-story
 Asset type: fixed protagonist character reference sheet for a hand-drawn Chinese diary-comic video
 Input images: the supplied black-and-white and color frames are style references only. Ignore their people, composition and Chinese text.
-Primary request: draw ONLY the recurring protagonists described below. Show each protagonist in two simple full-body poses, front view and three-quarter view, arranged side by side.
-Character lock: ${characterLock}
+Primary request: follow ONLY the episode-specific character-reference brief below. Do not add any identity mentioned only by the broader episode continuity lock.
+Character-reference brief:
+${characterReferenceBrief}
+Episode continuity lock (context only; it does not expand the reference-sheet cast):
+${characterLock}
 Style: ${styleLock}
 Composition: pure white square canvas, all uncropped full-body poses centered with generous spacing and a clean 10% safe border. No scenery, furniture, extra people, props or decorative marks.
 Color: selective muted wax-crayon color only. Follow the clothing colors in the character lock, use black scribbles for hair and dark trousers, and leave skin and most of the canvas white.

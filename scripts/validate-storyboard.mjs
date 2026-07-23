@@ -3,7 +3,8 @@ import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const files = process.argv.slice(2);
+const allowMissingAssets = process.argv.includes('--allow-missing-assets');
+const files = process.argv.slice(2).filter((value) => value !== '--allow-missing-assets');
 const storyboardFiles = files.length > 0
   ? files
   : ['storyboard.json', 'storyboard.uploaded.json'];
@@ -120,7 +121,9 @@ const validate = (file) => {
       if (!path) continue;
       const absolute = resolve(root, 'public', path);
       if (!existsSync(absolute)) {
-        errors.push(`${label}: missing ${key} asset at public/${path}`);
+        if (!allowMissingAssets) {
+          errors.push(`${label}: missing ${key} asset at public/${path}`);
+        }
         continue;
       }
       const dimensions = pngDimensions(absolute);
@@ -161,4 +164,8 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log('✓ all storyboards valid · silent picture tracks');
+console.log(
+  allowMissingAssets
+    ? '✓ all storyboards structurally valid · planned assets may be pending'
+    : '✓ all storyboards valid · silent picture tracks',
+);
