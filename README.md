@@ -33,7 +33,7 @@
 ### 环境要求
 
 - Node.js 20 或更高版本
-- Python 3.10 或更高版本
+- Python 3.10 或更高版本，以及 Pillow、NumPy
 - FFmpeg,且 `ffmpeg`、`ffprobe` 可从终端调用
 - `edge-tts`（需要自动生成配音时：`python3 -m pip install edge-tts`）
 - npm
@@ -130,6 +130,20 @@ node scripts/validate-storyboard.mjs /absolute/episode/storyboard.json
 审计器与渲染器统一只接受 `hold`、`push_soft`、`push_left`、`push_right`、`pull_soft`、`pan_left`、`pan_right`；旧的泛化标签 `push`、`pull` 会直接失败。
 插画尚未生成的规划阶段可加 `--allow-missing-assets`，只校验结构、时长、层级和运镜；正式导入、预览和交付前必须去掉该参数，恢复素材存在性与尺寸检查。
 
+如果原始生成图在全分辨率语义审查中已经通过，但背景只是“近白”而非精确
+`#FFFFFF`，先保留原图，再做全画布机械归一化；它不能用于修复裁断、错误
+人物、错误物件或构图泄漏：
+
+```bash
+python3 scripts/normalize-illustration-master.py \
+  /absolute/episode/candidates/scene-01/attempt-01-original.png \
+  /absolute/episode/candidates/scene-01/candidate-final.png \
+  --json-report /absolute/episode/candidates/scene-01/candidate-final-normalization.json
+python3 scripts/audit-illustration-masters.py \
+  /absolute/episode/candidates/scene-01/candidate-final.png \
+  --min-margin 126
+```
+
 生成封面、连续配音和最终发布版：
 
 ```bash
@@ -209,7 +223,7 @@ This repo contains:
 
 ### Requirements
 
-- Node.js 20+, Python 3.10+, npm, and `edge-tts` when narration generation is needed
+- Node.js 20+, Python 3.10+ with Pillow and NumPy, npm, and `edge-tts` when narration generation is needed
 - FFmpeg (`ffmpeg` and `ffprobe` on PATH)
 - Google Chrome or a Remotion-managed compatible browser
 - An agent runtime with skill support (Codex, Claude Code, Kimi Code, …)
@@ -276,7 +290,7 @@ Preview first (720×960, before committing to a full render):
 使用 $story-to-handdrawn-video 先给这个故事生成一个预览版。
 ```
 
-Notes: one complete sentence per beat by default; Codex Image2 is the default image generator. For exact one-line-per-scene planning, pass `--scene-contract` with a consecutive `01..NN` visual plan covering every non-empty source line. Each entry must include a 1–3 line `caption` and `duration_sec` in `2..15`; without the flag, the established automatic sentence splitter remains active. Keep the full spoken thought in the source line and the shorter screen copy in `caption`. When an episode introduces only one new recurring character, pass a narrow brief with `--character-reference-prompt`; the broader `--character-lock` remains continuity context and no longer expands the reference-sheet cast. For parallel episodes, pair an episode-specific `--output` with its `--manifest` so later planning cannot redirect an earlier import. Before import or preview, run `python3 scripts/audit_motion_timeline.py <timeline> --expected-duration <seconds>` and the renderer's storyboard validator. During planning only, `validate-storyboard.mjs --allow-missing-assets <storyboard>` checks structure before illustrations exist; omit that flag for every import, preview, and delivery gate. The audit deliberately accepts only the same seven motions as the renderer: `hold`, `push_soft`, `push_left`, `push_right`, `pull_soft`, `pan_left`, and `pan_right`. Approve the silent master first, then use `scripts/build_story_audio.py` with an episode config. Narration is synthesized as connected acts; VTT timestamps measure sync but never cut prose into sentence clips. The example starts with the warm female `zh-CN-XiaoxiaoNeural` for intimate or allegorical Chinese narration, while `voice`, `rate`, `pitch`, and `volume` remain configurable and must be re-evaluated for a different genre, audience, or story relationship.
+Notes: one complete sentence per beat by default; Codex Image2 is the default image generator. For exact one-line-per-scene planning, pass `--scene-contract` with a consecutive `01..NN` visual plan covering every non-empty source line. Each entry must include a 1–3 line `caption` and `duration_sec` in `2..15`; without the flag, the established automatic sentence splitter remains active. Keep the full spoken thought in the source line and the shorter screen copy in `caption`. When an episode introduces only one new recurring character, pass a narrow brief with `--character-reference-prompt`; the broader `--character-lock` remains continuity context and no longer expands the reference-sheet cast. For parallel episodes, pair an episode-specific `--output` with its `--manifest` so later planning cannot redirect an earlier import. Preserve and inspect every untouched illustration original. If a semantic PASS has only a near-white generated field, `scripts/normalize-illustration-master.py` may perform whole-frame normalization, uniform downscale, and exact-white centering; it must never rescue a cropped, semantically wrong, or identity-leaking image, and the derivative must still pass `scripts/audit-illustration-masters.py`. Before import or preview, run `python3 scripts/audit_motion_timeline.py <timeline> --expected-duration <seconds>` and the renderer's storyboard validator. During planning only, `validate-storyboard.mjs --allow-missing-assets <storyboard>` checks structure before illustrations exist; omit that flag for every import, preview, and delivery gate. The audit deliberately accepts only the same seven motions as the renderer: `hold`, `push_soft`, `push_left`, `push_right`, `pull_soft`, `pan_left`, and `pan_right`. Approve the silent master first, then use `scripts/build_story_audio.py` with an episode config. Narration is synthesized as connected acts; VTT timestamps measure sync but never cut prose into sentence clips. The example starts with the warm female `zh-CN-XiaoxiaoNeural` for intimate or allegorical Chinese narration, while `voice`, `rate`, `pitch`, and `volume` remain configurable and must be re-evaluated for a different genre, audience, or story relationship.
 
 ### Outputs
 
