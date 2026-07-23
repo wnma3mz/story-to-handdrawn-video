@@ -1,9 +1,12 @@
 export type LayerId = 'text' | 'bw_full' | 'detail' | 'color';
 
+export type VisualMode = 'diary' | 'ink-comic';
+
 export type SceneData = {
   id: string;
   duration_sec: number;
   text: string;
+  summary_text?: string;
   narration?: string;
   visual: string;
   shot: string;
@@ -11,13 +14,26 @@ export type SceneData = {
   motion?:
     | 'hold'
     | 'push_soft'
+    | 'push'
     | 'push_left'
     | 'push_right'
     | 'pull_soft'
+    | 'pull'
     | 'pan_left'
     | 'pan_right'
+    | 'pan_up'
+    | 'pan_down'
     | string;
   transition_to_next?: 'cut' | 'fade' | string;
+  visual_interval_id?: string;
+  visual_interval_start?: boolean;
+  visual_interval_progress_start?: number;
+  visual_interval_progress_end?: number;
+  visual_mode?: VisualMode;
+  scene_kind?: 'host' | 'narrative' | 'evidence' | 'map' | 'title' | string;
+  glyph?: string | null;
+  case_label?: string | null;
+  accent?: string | null;
   layers: LayerId[];
   color_hint: string | null;
   detail_hint: string | null;
@@ -42,7 +58,9 @@ export type Storyboard = {
     enable_detail?: boolean;
     gen_size?: number;
     export_size?: [number, number];
-    ratio: '3:4';
+    visual_mode?: VisualMode;
+    subtitle_contract?: 'draft_summary' | 'verbatim_tts';
+    ratio: '3:4' | '16:9';
     width: number;
     height: number;
     fps: number;

@@ -11,11 +11,15 @@ const storyboardFiles = files.length > 0
 const allowedMotions = new Set([
   'hold',
   'push_soft',
+  'push',
   'push_left',
   'push_right',
   'pull_soft',
+  'pull',
   'pan_left',
   'pan_right',
+  'pan_up',
+  'pan_down',
 ]);
 
 const pngDimensions = (path) => {
@@ -43,9 +47,24 @@ const validate = (file) => {
     return ['storyboard must contain project and at least one scene'];
   }
 
-  if (project.ratio !== '3:4') errors.push('project.ratio must be 3:4');
-  if (project.width / project.height !== 0.75) {
-    errors.push('project width/height must be 3:4');
+  if (!['3:4', '16:9'].includes(project.ratio)) {
+    errors.push('project.ratio must be 3:4 or 16:9');
+  }
+  const expectedRatio = project.ratio === '16:9' ? 16 / 9 : 3 / 4;
+  if (Math.abs(project.width / project.height - expectedRatio) > 0.001) {
+    errors.push(`project width/height must be ${project.ratio}`);
+  }
+  if (!['diary', 'ink-comic', undefined].includes(project.visual_mode)) {
+    errors.push('project.visual_mode must be diary or ink-comic');
+  }
+  if (!['draft_summary', 'verbatim_tts', undefined].includes(project.subtitle_contract)) {
+    errors.push('project.subtitle_contract must be draft_summary or verbatim_tts');
+  }
+  if (project.subtitle_contract === 'verbatim_tts' && project.visual_mode !== 'ink-comic') {
+    errors.push('verbatim_tts subtitle contract is reserved for ink-comic mode');
+  }
+  if (project.visual_mode === 'ink-comic' && project.ratio !== '16:9') {
+    errors.push('ink-comic mode requires 16:9');
   }
   if (!Number.isFinite(project.fps) || project.fps <= 0) {
     errors.push('project.fps must be positive');
@@ -88,8 +107,15 @@ const validate = (file) => {
     }
     if (typeof scene.text !== 'string') {
       errors.push(`${label}: text must be a string`);
-    } else if ([...scene.text].length > 45) {
-      errors.push(`${label}: text exceeds 45 characters`);
+    } else if ([...scene.text.replace(/\s/g, '')].length > (project.visual_mode === 'ink-comic' ? 72 : 45)) {
+      errors.push(`${label}: text exceeds ${project.visual_mode === 'ink-comic' ? 72 : 45} characters`);
+    }
+    if (project.subtitle_contract === 'verbatim_tts') {
+      const normalizedText = String(scene.text || '').replace(/\s/g, '');
+      const normalizedNarration = String(scene.narration || '').replace(/\s/g, '');
+      if (!normalizedNarration || normalizedText !== normalizedNarration) {
+        errors.push(`${label}: verbatim_tts requires scene.text to match final scene.narration`);
+      }
     }
 
     const hasText = scene.layers.includes('text');
@@ -106,6 +132,14 @@ const validate = (file) => {
     }
     if (!scene.assets.color || colorIndex < 0) {
       errors.push(`${label}: a color layer and asset are required`);
+    }
+    if (project.visual_mode === 'ink-comic') {
+      if (scene.visual_mode !== 'ink-comic') {
+        errors.push(`${label}: scene.visual_mode must be ink-comic`);
+      }
+      if (illustrated) {
+        errors.push(`${label}: ink-comic scenes use one full-screen color master, not bw_full reveal`);
+      }
     }
     if (project.mode === 'speed' && scene.assets.detail) {
       errors.push(`${label}: detail asset must be null in speed mode`);
@@ -133,10 +167,65 @@ const validate = (file) => {
       }
       if (dimensions && ['bw', 'detail', 'color'].includes(key)) {
         plateSizes.push(`${dimensions.width}x${dimensions.height}`);
+        if (
+          project.visual_mode === 'ink-comic' &&
+          key === 'color' &&
+          Math.abs(dimensions.width / dimensions.height - 16 / 9) > 0.01
+        ) {
+          errors.push(`${label}: ink-comic color asset must be 16:9`);
+        }
       }
     }
     if (illustrated && new Set(plateSizes).size > 1) {
       errors.push(`${label}: bw/detail/color plate dimensions must match exactly`);
+    }
+  }
+
+  const seenIntervals = new Set();
+  let previousInterval = null;
+  for (const scene of storyboard.scenes) {
+    const interval = String(scene.visual_interval_id || scene.id);
+    if (interval !== previousInterval) {
+      if (seenIntervals.has(interval)) {
+        errors.push(`${scene.id}: visual interval ${JSON.stringify(interval)} is non-contiguous`);
+      }
+      seenIntervals.add(interval);
+    }
+    previousInterval = interval;
+  }
+
+  for (const interval of seenIntervals) {
+    const scenes = storyboard.scenes.filter(
+      (scene) => String(scene.visual_interval_id || scene.id) === interval,
+    );
+    const first = scenes[0];
+    const asset = first.assets?.color;
+    const motion = first.motion || 'hold';
+    const focus = first.focus || 'center';
+    if (first.visual_interval_start === false) {
+      errors.push(`${first.id}: first scene of visual interval ${JSON.stringify(interval)} must start the interval`);
+    }
+    for (let index = 0; index < scenes.length; index += 1) {
+      const scene = scenes[index];
+      if (scene.assets?.color !== asset || (scene.motion || 'hold') !== motion || (scene.focus || 'center') !== focus) {
+        errors.push(`${scene.id}: asset, motion, and focus must stay fixed inside visual interval ${JSON.stringify(interval)}`);
+      }
+      if (index > 0 && scene.visual_interval_start !== false) {
+        errors.push(`${scene.id}: repeated machine scene must not restart visual interval ${JSON.stringify(interval)}`);
+      }
+      const start = scene.visual_interval_progress_start;
+      const end = scene.visual_interval_progress_end;
+      if (Number.isFinite(start) && Number.isFinite(end)) {
+        const expectedStart = index === 0
+          ? 0
+          : scenes[index - 1].visual_interval_progress_end;
+        if (Math.abs(start - expectedStart) > 1e-6 || end <= start) {
+          errors.push(`${scene.id}: visual interval progress must be contiguous and increasing`);
+        }
+        if (index === scenes.length - 1 && Math.abs(end - 1) > 1e-6) {
+          errors.push(`${scene.id}: visual interval ${JSON.stringify(interval)} must end at progress 1`);
+        }
+      }
     }
   }
 

@@ -81,6 +81,14 @@ Apply filtering, compression, and loudness processing consistently to the whole 
 
 ## Acceptance gates
 
+### Editorial shots versus subtitle scenes
+
+An editorial shot may support more than one terminally punctuated narration sentence. Keep the illustration as one visual interval, but compile one machine scene per actual TTS/VTT cue so every subtitle is verbatim and semantically timed. Reuse the same asset across those machine scenes, carry a single normalized motion path from 0 to 1 over the full interval, and suppress repeated image fades. A subtitle change must not restart the camera move or flash the image.
+
+Show the new verbatim subtitle on the first frame of its machine scene. Do not use a decorative caption fade that makes readable text lag behind the measured semantic cue start.
+
+Measure the compiled intervals before rendering. Each machine scene must remain 2–15 seconds; when a cue falls outside that range, revise a natural sentence boundary in the narration source and resynthesize the whole act. Never fix it by cutting or stretching the act waveform.
+
 - Listen at normal speed across every group boundary and representative visual transition.
 - Reject clipped tails, voice resets, sentence-level gear changes, and unexplained dead air.
 - Ordinary narration should have no unplanned silence over 1.25 seconds; the longest silence is normally under 2 seconds except an approved ending.

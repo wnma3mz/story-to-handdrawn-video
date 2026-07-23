@@ -1,4 +1,4 @@
 interface:
-  display_name: "故事转手绘有声动画"
-  short_description: "把故事制成连续配音、非白底有声封面与自然运镜的完整手绘动画"
-  default_prompt: "使用 $story-to-handdrawn-video 把这段故事生成带连续配音和非白底有声封面的完整手绘动画。"
+  display_name: "故事转手绘与历史动态漫"
+  short_description: "把故事制成3:4手绘日记或16:9黑白历史动态漫成片"
+  default_prompt: "使用 $story-to-handdrawn-video 把这段故事制作成带连续配音和有声封面的16:9黑白历史动态漫。"

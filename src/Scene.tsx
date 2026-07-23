@@ -5,6 +5,7 @@ import {
   useVideoConfig,
 } from 'remotion';
 import {LayerWipe} from './LayerWipe';
+import {InkComicScene} from './InkComicScene';
 import {MotionStage} from './MotionStage';
 import {TextWipe} from './TextWipe';
 import type {SceneData} from './types';
@@ -18,6 +19,10 @@ export const Scene: React.FC<{scene: SceneData}> = ({scene}) => {
   const staticColor = has('color') && !has('bw_full') && !has('detail');
   const fullUploadedPage =
     scene.shot === 'full_uploaded_page' && scene.assets.color;
+
+  if (scene.visual_mode === 'ink-comic') {
+    return <InkComicScene scene={scene} />;
+  }
 
   if (fullUploadedPage) {
     return (
