@@ -61,12 +61,19 @@ const shouldApply = args.apply === true;
 const shouldRender = args.render === true;
 const shouldForce = args.force === true;
 const sceneContract = args['scene-contract'] === true;
+const visualMode = String(args['visual-mode'] || 'diary');
 
 if (!['image2', 'font'].includes(textMode)) {
   throw new Error('--text-mode must be image2 or font');
 }
 if (!['codex', 'api'].includes(generator)) {
   throw new Error('--generator must be codex or api');
+}
+if (!['diary', 'ink-comic'].includes(visualMode)) {
+  throw new Error('--visual-mode must be diary or ink-comic');
+}
+if (visualMode === 'ink-comic' && textMode === 'image2') {
+  throw new Error('--visual-mode ink-comic uses code subtitles; choose --text-mode font');
 }
 if (generator === 'codex' && args.manifest && !args.output) {
   throw new Error(
@@ -202,8 +209,9 @@ const durationFor = (caption) => {
   return Number(Math.min(6.2, Math.max(4.4, 3.8 + lineCount * 0.48 + characterCount * 0.035)).toFixed(1));
 };
 
-const styleLock =
-  'minimalist Chinese diary comic reconstructed from the supplied reference video, pure white background, uneven black felt-tip pen outlines, naive wobbly proportions, rough dense black crayon scribbles for dark areas, sparse props, abundant negative space, selective muted wax-crayon color only, no realistic shading, no paper texture, no watermark';
+const styleLock = visualMode === 'ink-comic'
+  ? 'full-screen Northern Song monochrome motion-comic illustration, bold black ink outlines, expressive adult faces, grayscale ink-wash depth, restrained paper grain, dramatic but readable staging, selective vermilion or muted field-green color only on the active clue, no fixed white diary page, no photorealism, glossy 3D, anime styling, modern collage typography or watermark'
+  : 'minimalist Chinese diary comic reconstructed from the supplied reference video, pure white background, uneven black felt-tip pen outlines, naive wobbly proportions, rough dense black crayon scribbles for dark areas, sparse props, abundant negative space, selective muted wax-crayon color only, no realistic shading, no paper texture, no watermark';
 const characterLock = String(
   args['character-lock'] ||
     '重复出现的主角须保持同一张脸、发型、年龄、服装配色和身体比例；具体人物身份以故事原文为准；不得添加原文未提及的配角、道具或文字',
@@ -274,11 +282,14 @@ const illustrationPlan = Object.fromEntries(
       visual: entry.visual,
       shot_type: entry.shot_type,
       focus: entry.focus,
+      scene_kind: entry.scene_kind,
+      accent: entry.accent,
     }];
   }),
 );
 const hashInput = [
-  generator === 'codex' ? 'codex-illustration-v4' : 'api-v2',
+  generator === 'codex' ? 'codex-illustration-v5' : 'api-v3',
+  visualMode,
   title,
   textMode,
   characterLock,
@@ -396,18 +407,18 @@ if (generator === 'codex') {
   if (!suppliedCharacterReference) {
     const characterPrompt = writePrompt(
       '00_character_reference.txt',
-      `Use case: illustration-story
-Asset type: fixed protagonist character reference sheet for a hand-drawn Chinese diary-comic video
-Input images: the supplied black-and-white and color frames are style references only. Ignore their people, composition and Chinese text.
+      `Use case: ${visualMode === 'ink-comic' ? 'historical-scene' : 'illustration-story'}
+Asset type: fixed recurring-character reference sheet for a ${visualMode === 'ink-comic' ? 'Northern Song monochrome motion-comic' : 'hand-drawn Chinese diary-comic'} video
+Input images: ${visualMode === 'ink-comic' ? 'none; establish the requested original visual language' : 'the supplied black-and-white and color frames are style references only; ignore their people, composition and Chinese text'}.
 Primary request: follow ONLY the episode-specific character-reference brief below. Do not add any identity mentioned only by the broader episode continuity lock.
 Character-reference brief:
 ${characterReferenceBrief}
 Episode continuity lock (context only; it does not expand the reference-sheet cast):
 ${characterLock}
 Style: ${styleLock}
-Composition: pure white square canvas, all uncropped full-body poses centered with generous spacing and a clean 10% safe border. No scenery, furniture, extra people, props or decorative marks.
-Color: selective muted wax-crayon color only. Follow the clothing colors in the character lock, use black scribbles for hair and dark trousers, and leave skin and most of the canvas white.
-Constraints: this is an identity reference only; no text, letters, numbers, labels, captions, speech bubbles, logo, signature or watermark; no realistic shading, gradients or vector cleanliness.`,
+Composition: neutral light-gray reference sheet, all uncropped full-body poses centered with generous spacing and a clean 10% safe border. No scenery, furniture, extra people, props or decorative marks.
+Color: ${visualMode === 'ink-comic' ? 'almost entirely grayscale; reserve one muted vermilion accent for a small clothing fastener so identity remains trackable' : 'selective muted wax-crayon color only; follow the clothing colors in the character lock, use black scribbles for hair and dark trousers, and leave skin and most of the canvas white'}.
+Constraints: this is an identity reference only; no text, letters, numbers, labels, captions, speech bubbles, logo, signature or watermark; no photorealism, glossy 3D or anime styling.`,
     );
     codexJobs.push({
       id: 'character_reference',
@@ -415,7 +426,7 @@ Constraints: this is an identity reference only; no text, letters, numbers, labe
       prompt_file: characterPrompt,
       prompt: readFileSync(characterPrompt, 'utf8').trim(),
       output_master: codexCharacterReference,
-      references: [referenceBw, referenceColor],
+      references: visualMode === 'ink-comic' ? [] : [referenceBw, referenceColor],
     });
   }
 }
@@ -444,9 +455,15 @@ for (let index = 0; index < storyParts.length; index += 1) {
   const focus = String(structuredVisualPlan.focus || 'center');
   const motion = String(structuredVisualPlan.motion || 'hold');
   const sceneTransition = String(structuredVisualPlan.transition || 'cut');
+  const sceneKind = String(structuredVisualPlan.scene_kind || 'narrative');
+  const glyph = structuredVisualPlan.glyph ? String(structuredVisualPlan.glyph) : null;
+  const caseLabel = structuredVisualPlan.case_label ? String(structuredVisualPlan.case_label) : null;
+  const accent = structuredVisualPlan.accent ? String(structuredVisualPlan.accent) : '#A93B32';
   const plannedDuration = Number(structuredVisualPlan.duration_sec);
-  const usesImage2Text = textMode === 'image2';
-  const masterSize = usesImage2Text ? '1024x1536' : '1024x1024';
+  const usesImage2Text = visualMode === 'diary' && textMode === 'image2';
+  const masterSize = visualMode === 'ink-comic'
+    ? '1536x1024'
+    : usesImage2Text ? '1024x1536' : '1024x1024';
   const captionPanel = usesImage2Text
     ? `Top copy panel (pixels y=0–342): pure white background. Write ONLY this Simplified Chinese caption verbatim, preserving the explicit line breaks:
 "${caption}"
@@ -455,16 +472,32 @@ Use thick casual black felt-tip handwriting, 1–3 lines only, generous 48-pixel
   const textConstraint = usesImage2Text
     ? 'no extra text outside the exact top caption, no letters or numbers in the illustration, no labels, captions, speech bubbles, logo, signature or watermark'
     : 'no text, letters, numbers, labels, captions, speech bubbles, logo, signature or watermark';
-  const illustrationPanel = usesImage2Text
-    ? 'Illustration panel (pixels y=512–1536): use this exact lower 1024×1024 square for the scene. Leave the 342–512 transition band completely white.'
-    : 'Use the entire 1024×1024 square for the scene.';
+  const illustrationPanel = visualMode === 'ink-comic'
+    ? 'Use the entire landscape canvas for the illustration. Do not reserve a white caption panel.'
+    : usesImage2Text
+      ? 'Illustration panel (pixels y=512–1536): use this exact lower 1024×1024 square for the scene. Leave the 342–512 transition band completely white.'
+      : 'Use the entire 1024×1024 square for the scene.';
+  const assetType = visualMode === 'ink-comic'
+    ? 'one full-bleed 16:9 production panel for a historical monochrome motion-comic'
+    : usesImage2Text
+      ? 'one vertical production master that will be split into a handwritten caption plate and a color illustration plate'
+      : 'one square color illustration master';
+  const compositionRule = visualMode === 'ink-comic'
+    ? 'Compose for a 16:9 full-screen frame. Use cinematic foreground, middle ground and background separation suitable for a restrained 2.5D push. Keep every face, hand and active clue inside the central 82% safe area and the bottom 18% free of essential detail for subtitles. Cropping secondary architecture at the frame edge is allowed; never crop the active clue.'
+    : 'Use a comfortably wide camera view. Keep the entire sparse scene in the lower-middle of its illustration square with generous white negative space. Reserve a clean white safe border of at least 10% on the left and right and 8% on the top and bottom. Every figure, limb, prop, building edge, roof, tree branch, rain stroke and motion mark must stay completely inside that safe border. Scale the scene down when necessary; never let any visible mark touch or cross a canvas edge.';
+  const colorRule = visualMode === 'ink-comic'
+    ? `Render 90–95% of the frame in black, charcoal and warm gray. Use ${accent} only on the single active clue or emotional focal object; do not color whole costumes or backgrounds.`
+    : 'Use selective muted wax-crayon color only: sage green, dusty blue, warm tan, brick red and warm yellow. Keep hair, trousers and other dark areas as black scribbles. Leave skin and most of the canvas pure white.';
+  const isolationRule = visualMode === 'ink-comic'
+    ? 'Show only characters and objects required by this beat. Large background calligraphy, subtitles, labels and exact title text will be added in code; generate none inside the illustration.'
+    : 'The character lock defines identities, not an automatic cast list. Show only characters explicitly named in the current sentence or strictly required for its immediate action. Never add family bystanders. Never show a future daughter, rescued child, grandmother, father or any other supporting character before that person is introduced by the narration. Do not carry any person, prop or setting forward merely because it appeared in another scene.';
 
   const hasContinuityReference = Boolean(previousColor) || Boolean(codexCharacterReference);
   const masterPrompt = writePrompt(
     `${id}_master.txt`,
-    `Use case: illustration-story
-Asset type: ${usesImage2Text ? 'one vertical production master that will be split into a handwritten caption plate and a color illustration plate' : 'one square color illustration master'} for a hand-drawn Chinese diary-comic video.
-Input images: the supplied original-video frames are style references${hasContinuityReference ? '; the fixed protagonist character sheet is the identity reference' : ''}. Ignore all text in references.
+    `Use case: historical-scene
+Asset type: ${assetType}.
+Input images: ${visualMode === 'ink-comic' ? 'the fixed character sheet, when supplied, controls identity only' : 'the supplied original-video frames are style references'}${hasContinuityReference ? '; the fixed protagonist character sheet is the identity reference' : ''}. Ignore all text in references.
 Narrative sentence to illustrate: "${text}"
 Scene direction: ${visualDirection}
 Narrative shot type: ${shotType}
@@ -474,16 +507,19 @@ Character lock: ${characterLock}
 Style: ${styleLock}
 ${captionPanel}
 ${illustrationPanel}
-Composition: use a comfortably wide camera view. Keep the entire sparse scene in the lower-middle of its illustration square with generous white negative space. Reserve a clean white safe border of at least 10% on the left and right and 8% on the top and bottom. Every figure, limb, prop, building edge, roof, tree branch, rain stroke and motion mark must stay completely inside that safe border. Scale the scene down when necessary; never let any visible mark touch or cross a canvas edge.
-Color: selective muted wax-crayon color only: sage green, dusty blue, warm tan, brick red and warm yellow. Keep hair, trousers and other dark areas as black scribbles. Leave skin and most of the canvas pure white.
+Composition: ${compositionRule}
+Color: ${colorRule}
 Continuity: preserve the locked character design. Use the fixed character sheet only for the protagonist's identity, never copy its pose or composition. Include only people required by the current narrative sentence.
-Narrative isolation: the character lock defines identities, not an automatic cast list. Show only characters explicitly named in the current sentence or strictly required for its immediate action. Never add family bystanders. Never show a future daughter, rescued child, grandmother, father or any other supporting character before that person is introduced by the narration. Do not carry any person, prop or setting forward merely because it appeared in another scene.
-Constraints: non-graphic, emotionally restrained family storytelling; no visible impact, blood, wounds, bruises or injury; no cropped or partially visible subject, prop or background structure; no close-up framing; ${textConstraint}; no graphite realism, gradients, detailed scenery or vector cleanliness.`,
+Narrative isolation: ${isolationRule}
+Constraints: non-graphic historical suspense, no gore; period-accurate Northern Song clothing, architecture and objects; ${textConstraint}; no photorealism, glossy 3D, anime styling, modern props or watermark.`,
   );
 
   if (shouldGenerateWithApi) {
     runImage2Edit({
-      images: [referenceBw, referenceColor, ...(previousColor ? [previousColor] : [])],
+      images: [
+        ...(visualMode === 'ink-comic' ? [] : [referenceBw, referenceColor]),
+        ...(previousColor ? [previousColor] : []),
+      ],
       promptFile: masterPrompt,
       size: masterSize,
       out: absoluteAsset(masterName),
@@ -517,7 +553,9 @@ Constraints: non-graphic, emotionally restrained family storytelling; no visible
         '-i',
         absoluteAsset(masterName),
         '-vf',
-        usesImage2Text
+        visualMode === 'ink-comic'
+          ? 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,format=gray,eq=contrast=1.16:brightness=-0.02,unsharp=5:5:0.42:5:5:0'
+          : usesImage2Text
           ? 'crop=1024:1024:0:512,format=gray,eq=contrast=1.18:brightness=0.035,unsharp=5:5:0.55:5:5:0'
           : 'format=gray,eq=contrast=1.18:brightness=0.035,unsharp=5:5:0.55:5:5:0',
         '-frames:v',
@@ -536,7 +574,9 @@ Constraints: non-graphic, emotionally restrained family storytelling; no visible
         '-i',
         absoluteAsset(masterName),
         '-vf',
-        usesImage2Text ? 'crop=1024:1024:0:512' : 'null',
+        visualMode === 'ink-comic'
+          ? 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080'
+          : usesImage2Text ? 'crop=1024:1024:0:512' : 'null',
         '-frames:v',
         '1',
         '-y',
@@ -555,10 +595,9 @@ Constraints: non-graphic, emotionally restrained family storytelling; no visible
       prompt: readFileSync(masterPrompt, 'utf8').trim(),
       output_master: absoluteAsset(masterName),
       references: [
-        referenceBw,
-        referenceColor,
+        ...(visualMode === 'ink-comic' ? [] : [referenceBw, referenceColor]),
         codexCharacterReference,
-      ],
+      ].filter(Boolean),
     });
   }
 
@@ -575,8 +614,15 @@ Constraints: non-graphic, emotionally restrained family storytelling; no visible
     focus,
     motion,
     transition_to_next: sceneTransition,
-    layers: ['text', 'bw_full', 'color'],
-    color_hint: '仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白',
+    visual_mode: visualMode,
+    scene_kind: sceneKind,
+    glyph,
+    case_label: caseLabel,
+    accent,
+    layers: visualMode === 'ink-comic' ? ['text', 'color'] : ['text', 'bw_full', 'color'],
+    color_hint: visualMode === 'ink-comic'
+      ? `全画面黑白灰，仅用 ${accent} 强调一个关键证物或情绪焦点`
+      : '仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白',
     detail_hint: null,
     assets: {
       text_image: usesImage2Text ? projectAsset(textName) : null,
@@ -595,10 +641,12 @@ const storyboard = {
     derive_bw: 'local',
     enable_detail: false,
     gen_size: 1024,
-    export_size: [1080, 1440],
-    ratio: '3:4',
-    width: 1080,
-    height: 1440,
+    visual_mode: visualMode,
+    subtitle_contract: visualMode === 'ink-comic' ? 'draft_summary' : undefined,
+    export_size: visualMode === 'ink-comic' ? [1920, 1080] : [1080, 1440],
+    ratio: visualMode === 'ink-comic' ? '16:9' : '3:4',
+    width: visualMode === 'ink-comic' ? 1920 : 1080,
+    height: visualMode === 'ink-comic' ? 1080 : 1440,
     fps: 30,
     transition,
     transition_sec: transitionSec,
@@ -627,6 +675,8 @@ if (generator === 'codex') {
       {
         version: 1,
         generator: 'codex-image2',
+        visual_mode: visualMode,
+        master_size: visualMode === 'ink-comic' ? '1536x1024' : null,
         asset_set: assetSet,
         storyboard: outputPath,
         text_mode: textMode,

@@ -1,7 +1,7 @@
 import rawStoryboard from '../storyboard.json';
 import type {Storyboard} from './types';
 
-export const storyboard = rawStoryboard as Storyboard;
+export const storyboard = rawStoryboard as unknown as Storyboard;
 
 export const transitionFramesFor = (value: Storyboard) => {
   if (value.project.transition !== 'page-flip') return 0;

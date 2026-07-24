@@ -73,6 +73,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--asset-set")
     parser.add_argument("--character-reference", type=Path)
     parser.add_argument("--text-mode", choices=("image2", "font"), default="font")
+    parser.add_argument(
+        "--visual-mode",
+        choices=("diary", "ink-comic"),
+        default="diary",
+        help="Diary page layout or full-screen 16:9 monochrome motion comic",
+    )
     parser.add_argument("--transition", choices=("cut", "page-flip"), default="cut")
     parser.add_argument("--transition-sec", type=float, default=0.7)
     parser.add_argument("--page-duration", type=float, default=4.4)
@@ -184,6 +190,8 @@ def main() -> None:
         args.text_mode,
         "--generator",
         args.generator,
+        "--visual-mode",
+        args.visual_mode,
         "--transition",
         args.transition,
         "--transition-sec",

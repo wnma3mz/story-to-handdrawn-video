@@ -1,6 +1,138 @@
 import {AbsoluteFill, Img, staticFile} from 'remotion';
 import {storyboard} from './storyboard';
 
+const InkComicCover: React.FC = () => {
+  const cover = storyboard.project.cover || {};
+  const firstScene = storyboard.scenes[0];
+  const title = cover.title || storyboard.project.title;
+  const titleLines = balancedInkTitleLines(title);
+  const longestTitleLine = Math.max(
+    ...titleLines.map((line) => Array.from(line).length),
+    1,
+  );
+  const titleFontSize =
+    longestTitleLine <= 5
+      ? 126
+      : longestTitleLine === 6
+        ? 112
+        : Math.max(82, Math.floor(680 / longestTitleLine));
+  const background = cover.background || '#171717';
+  const accent = cover.accent || '#A93B32';
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: background,
+        color: '#F4F0E8',
+        fontFamily: 'OriginalDiaryHand, Songti SC, STSong, serif',
+        overflow: 'hidden',
+      }}
+    >
+      {firstScene.assets.color ? (
+        <Img
+          src={staticFile(firstScene.assets.color)}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            filter: 'grayscale(0.74) contrast(1.18) brightness(0.67)',
+          }}
+        />
+      ) : null}
+      <AbsoluteFill
+        style={{
+          background:
+            'linear-gradient(90deg, rgba(10,10,10,0.96) 0%, rgba(10,10,10,0.76) 43%, rgba(10,10,10,0.16) 78%, rgba(10,10,10,0.5) 100%)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: 110,
+          top: 92,
+          fontSize: 34,
+          letterSpacing: '0.15em',
+          color: '#D8D2C8',
+        }}
+      >
+        {cover.series_title || '清明上河图谜案 · 动态漫'}
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          left: 108,
+          top: 230,
+          width: 900,
+          borderLeft: `14px solid ${accent}`,
+          paddingLeft: 42,
+        }}
+      >
+        <div style={{fontSize: 52, color: '#CFC7B9', marginBottom: 16}}>
+          {cover.episode_label || '第五季 · 风篇'}
+        </div>
+        <div
+          style={{
+            fontSize: titleFontSize,
+            lineHeight: 1.04,
+            letterSpacing: '0.035em',
+            textShadow: '0 5px 18px rgba(0,0,0,0.86)',
+          }}
+        >
+          {titleLines.map((line, index) => (
+            <div key={`${index}-${line}`} style={{whiteSpace: 'nowrap'}}>
+              {line}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          right: 94,
+          bottom: 64,
+          width: 116,
+          height: 116,
+          borderRadius: 12,
+          backgroundColor: accent,
+          color: '#F7EFE2',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 66,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.36)',
+          transform: 'rotate(-3deg)',
+        }}
+      >
+        田
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+const balancedInkTitleLines = (title: string) => {
+  const explicitLines = title
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (explicitLines.length > 1) return explicitLines;
+
+  const characters = Array.from(explicitLines[0] || title.trim());
+  if (characters.length <= 5) return [characters.join('')];
+  const lineCount = characters.length <= 14 ? 2 : 3;
+  const lines: string[] = [];
+  let offset = 0;
+  for (let index = 0; index < lineCount; index += 1) {
+    const remainingCharacters = characters.length - offset;
+    const remainingLines = lineCount - index;
+    const take = Math.ceil(remainingCharacters / remainingLines);
+    lines.push(characters.slice(offset, offset + take).join(''));
+    offset += take;
+  }
+  return lines;
+};
+
 const splitTitle = (title: string) => {
   const [chapter, ...rest] = title.split('｜');
   return {
@@ -55,6 +187,9 @@ const chineseChapterNumber = (chapter: string): number | null => {
 };
 
 export const EpisodeCover: React.FC = () => {
+  if (storyboard.project.visual_mode === 'ink-comic') {
+    return <InkComicCover />;
+  }
   const parsed = splitTitle(storyboard.project.title);
   const cover = storyboard.project.cover || {};
   const chapter = cover.episode_label || parsed.chapter;

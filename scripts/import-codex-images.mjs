@@ -106,6 +106,8 @@ for (const job of manifest.jobs.filter((item) => item.role !== 'reference')) {
     );
   }
 
+  const inkComic = manifest.visual_mode === 'ink-comic';
+
   execFileSync(
     'ffmpeg',
     [
@@ -115,7 +117,9 @@ for (const job of manifest.jobs.filter((item) => item.role !== 'reference')) {
       '-i',
       masterPath,
       '-vf',
-      manifest.text_mode === 'image2'
+      inkComic
+        ? 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,format=gray,eq=contrast=1.16:brightness=-0.02,unsharp=5:5:0.42:5:5:0'
+        : manifest.text_mode === 'image2'
         ? 'crop=1024:1024:0:512,format=gray,eq=contrast=1.18:brightness=0.035,unsharp=5:5:0.55:5:5:0'
         : 'format=gray,eq=contrast=1.18:brightness=0.035,unsharp=5:5:0.55:5:5:0',
       '-frames:v',
@@ -135,7 +139,9 @@ for (const job of manifest.jobs.filter((item) => item.role !== 'reference')) {
       '-i',
       masterPath,
       '-vf',
-      manifest.text_mode === 'image2' ? 'crop=1024:1024:0:512' : 'null',
+      inkComic
+        ? 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080'
+        : manifest.text_mode === 'image2' ? 'crop=1024:1024:0:512' : 'null',
       '-frames:v',
       '1',
       '-y',

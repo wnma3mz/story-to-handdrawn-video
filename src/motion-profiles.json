@@ -1,0 +1,90 @@
+{
+  "hold": {
+    "startScale": 1.004,
+    "endScale": 1.004,
+    "startXPercent": 0,
+    "endXPercent": 0,
+    "startYPercent": 0,
+    "endYPercent": 0
+  },
+  "push_soft": {
+    "startScale": 1.004,
+    "endScale": 1.024,
+    "startXPercent": 0,
+    "endXPercent": 0,
+    "startYPercent": 0,
+    "endYPercent": 0
+  },
+  "push": {
+    "startScale": 1.004,
+    "endScale": 1.038,
+    "startXPercent": 0,
+    "endXPercent": 0,
+    "startYPercent": 0,
+    "endYPercent": 0
+  },
+  "push_left": {
+    "startScale": 1.004,
+    "endScale": 1.036,
+    "startXPercent": 0,
+    "endXPercent": 0,
+    "startYPercent": 0,
+    "endYPercent": 0
+  },
+  "push_right": {
+    "startScale": 1.004,
+    "endScale": 1.036,
+    "startXPercent": 0,
+    "endXPercent": 0,
+    "startYPercent": 0,
+    "endYPercent": 0
+  },
+  "pull_soft": {
+    "startScale": 1.024,
+    "endScale": 1.004,
+    "startXPercent": 0,
+    "endXPercent": 0,
+    "startYPercent": 0,
+    "endYPercent": 0
+  },
+  "pull": {
+    "startScale": 1.038,
+    "endScale": 1.004,
+    "startXPercent": 0,
+    "endXPercent": 0,
+    "startYPercent": 0,
+    "endYPercent": 0
+  },
+  "pan_left": {
+    "startScale": 1.04,
+    "endScale": 1.04,
+    "startXPercent": 1.35,
+    "endXPercent": -1.35,
+    "startYPercent": 0,
+    "endYPercent": 0
+  },
+  "pan_right": {
+    "startScale": 1.04,
+    "endScale": 1.04,
+    "startXPercent": -1.35,
+    "endXPercent": 1.35,
+    "startYPercent": 0,
+    "endYPercent": 0
+  },
+  "pan_up": {
+    "startScale": 1.04,
+    "endScale": 1.04,
+    "startXPercent": 0,
+    "endXPercent": 0,
+    "startYPercent": 1.35,
+    "endYPercent": -1.35
+  },
+  "pan_down": {
+    "startScale": 1.04,
+    "endScale": 1.04,
+    "startXPercent": 0,
+    "endXPercent": 0,
+    "startYPercent": -1.35,
+    "endYPercent": 1.35
+  }
+}

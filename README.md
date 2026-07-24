@@ -8,7 +8,7 @@
 
 ## 中文
 
-把中文故事文案或一组有序的手绘图片,转换成 3:4 竖屏**手绘日记漫画成片**:手写体字幕、自然连续运镜、从左到右的「文字 → 黑白画稿 → 彩色插画」揭示、非白底有声封面，以及按情节分组的连续配音。基于 [Remotion](https://www.remotion.dev/) 与 FFmpeg；静音画面母版、无封面配音版和最终发布版分别保留。
+把中文故事文案或一组有序图片转换成两类成片：3:4 竖屏**手绘日记漫画**，或 16:9 横屏**黑白历史动态漫 / 案卷剧场**。两种模式都提供自然连续运镜、非白底有声封面、按情节分组的连续配音与交付质检。基于 [Remotion](https://www.remotion.dev/) 与 FFmpeg；静音画面母版、无封面配音版和最终发布版分别保留。
 
 本仓库包含两部分:
 
@@ -18,6 +18,7 @@
 ### 功能特性
 
 - 中文故事自动分句和动态分镜,保留原文措辞
+- `diary` 与 `ink-comic` 双视觉模式：前者保留白纸手账构图，后者使用 16:9 全屏黑白画面、代码字幕和单一线索色
 - 上传漫画页或完整图片,保持原顺序和构图
 - 自动拆分上方文字区与下方插画区
 - 本地生成与彩色插画对齐的黑白层
@@ -28,7 +29,7 @@
 - 可配置的非白底系列封面，标题由代码精确排版并带可听见的标题音频
 - 3–6 个连续叙事组配音，VTT 只用于同步测量，不切碎句子
 - 语义同步、响度、首帧、封面音频、完整解码等自动质检
-- 1080×1440 正式渲染和 720×960 快速预览
+- `diary` 输出 1080×1440，`ink-comic` 输出 1920×1080；两者都支持快速预览
 - Codex Image2 工作流,以及显式选择的 OpenAI API 工作流
 
 ### 环境要求
@@ -89,6 +90,13 @@ export STORY_VIDEO_PROJECT=/absolute/path/to/story-to-handdrawn-video
 使用 $story-to-handdrawn-video 把 /absolute/story.txt 生成手绘动画,标题叫「纸上的夏天」。
 ```
 
+**历史故事 / 悬疑案件 → 16:9 黑白动态漫**：
+
+```text
+使用 $story-to-handdrawn-video 的 ink-comic 模式，把 /absolute/story.txt
+做成 16:9 黑白历史动态漫；只在关键线索上保留一处朱红色。
+```
+
 **上传图片 → 手绘动画**(图片按播放顺序给出):
 
 ```text
@@ -103,7 +111,7 @@ export STORY_VIDEO_PROJECT=/absolute/path/to/story-to-handdrawn-video
 /absolute/01.jpg /absolute/02.jpg
 ```
 
-**先出预览**(720×960,确认效果后再出正式版):
+**先出预览**(`diary` 为 720×960，`ink-comic` 为 1280×720；确认后再出正式版):
 
 ```text
 使用 $story-to-handdrawn-video 先给这个故事生成一个预览版。
@@ -112,12 +120,12 @@ export STORY_VIDEO_PROJECT=/absolute/path/to/story-to-handdrawn-video
 使用建议:
 
 - 故事文本默认一个完整句子一个节拍;想控制节奏,直接在故事里按句分行即可。
-- 需要精确的一行一镜时，使用 `--scene-contract` 并让 `visual-plan.json` 从 `01` 起连续覆盖全部非空行：长旁白保持在该镜内，不再被自动子句切分；每镜必须提供 1–3 行 `caption` 和 2–15 秒 `duration_sec`，从而把“完整旁白”和“可读字幕”分开。未显式启用时仍使用原有自动分句。
-- 新集只需新增某个角色时，把“本集新角色参考图”的窄范围描述放进独立文件并传给 `--character-reference-prompt`；完整的 `--character-lock` 仍负责全剧连续性，但不会把其中提到的所有旧角色都画进新参考图。
+- 需要精确的一行一镜时，使用 `--scene-contract` 并让 `visual-plan.json` 从 `01` 起连续覆盖全部非空行：长旁白保持在该镜内，不再被自动子句切分；每镜必须提供 1–3 行 `caption` 和 2–15 秒 `duration_sec`，从而把"完整旁白"和"可读字幕"分开。`ink-comic` 的正式字幕随后从最终 TTS 配置逐句回填。未显式启用时仍使用原有自动分句。
+- 新集只需新增某个角色时，把"本集新角色参考图"的窄范围描述放进独立文件并传给 `--character-reference-prompt`；完整的 `--character-lock` 仍负责全剧连续性，但不会把其中提到的所有旧角色都画进新参考图。
 - 并行制作多集时，为每集同时指定独立的 `--output /episode/storyboard.json` 与 `--manifest /episode/codex-image-jobs.json`；manifest 会绑定该 storyboard，避免后生成的集数覆盖前集 import 目标。
 - 遇到时间跳跃、指代不明、医疗场景或年龄敏感角色时,建议先让 Agent 给出视觉规划(两位场景编号为键的 JSON),确认后再生成。
 - 默认使用 Codex Image2 生成图片;只有明确要求时才会走 OpenAI API(需 `OPENAI_API_KEY`)。
-- 先验收静音画面母版，再建立连续配音和有声封面；不要用逐镜头 TTS 或逐句变速。
+- 先验收静音视觉预览，再冻结连续配音文案；`ink-comic` 回填逐字字幕后才渲染正式静音画面母版。不要用逐镜头 TTS 或逐句变速。
 
 导入或预览前先审计本集运动时间线，并再跑渲染器自身校验：
 
@@ -167,6 +175,16 @@ python3 scripts/audit_story_delivery.py \
   --cover-duration 2.7
 ```
 
+`ink-comic` 的底部字幕必须逐句对应最终实际配音。配音文案冻结后，先回填并校验字幕，再渲染正式画面：
+
+```bash
+python3 scripts/apply_verbatim_subtitles.py \
+  --storyboard storyboard.json \
+  --config /absolute/voiceover.json
+npm run check
+npm run render
+```
+
 示例配置只展示结构；请按真实分镜填写每组 `scene_ids`、`start_sec` 和 `speech_text`。一组旁白一次合成，组内不切句、不逐句变速。QC 会同时检查计划组间 gap 与母带的真实声学静音；默认普通停顿上限为 1.25 秒，只有正常速度人工听感明确通过时，才可用 `--ordinary-pause-limit` 记录不高于 1.50 秒的单集例外。
 
 示例以温和女声 `zh-CN-XiaoxiaoNeural` 作为亲密叙事或寓言题材的起点，但这不是跨故事硬编码。`profile` 中的 `voice`、`rate`、`pitch` 和 `volume` 均可配置；更换故事类型、受众或叙述关系时，应重新用开篇和后半段样本做正常速度 A/B，再冻结该系列的声音配置。
@@ -182,7 +200,7 @@ python3 scripts/audit_story_delivery.py \
 | 配音 | 无封面审片版 | `out/voiceover/<version>/episode_with_voiceover.mp4` |
 | 配音 | 有声封面发布版 | `out/voiceover/<version>/episode_release_with_cover.mp4` |
 
-- 分辨率:正式 1080×1440,预览 720×960
+- 分辨率：`diary` 正式版 1080×1440；`ink-comic` 正式版 1920×1080
 - 画面母版:H.264,静音
 - 旁白母版:48 kHz / 24-bit PCM / mono，默认约 -16 LUFS、真峰值不高于 -1.5 dBTP
 - 发布版:H.264 + 48 kHz stereo AAC；封面时段可听，主画面与故事旁白同一时刻开始
@@ -222,7 +240,7 @@ Skill 的完整行为约定见 [skill-package/story-to-handdrawn-video/SKILL.md]
 
 ## English
 
-Convert story copy—or ordered hand-drawn images—into a 3:4 vertical **hand-drawn diary-comic release** with handwritten captions, natural continuous camera motion, left-to-right `text → bw plate → color illustration` reveals, an audible non-white cover, and connected narration groups. Built on [Remotion](https://www.remotion.dev/) and FFmpeg; it preserves separate silent-picture, voiced-review, and public-release masters.
+Convert story copy—or ordered images—into either a 3:4 vertical **hand-drawn diary comic** or a 16:9 **monochrome historical motion comic / case-file theater**. Both modes include motivated continuous motion, an audible non-white cover, connected narration groups, and delivery QC. Built on [Remotion](https://www.remotion.dev/) and FFmpeg; it preserves separate silent-picture, voiced-review, and public-release masters.
 
 This repo contains:
 
@@ -292,13 +310,13 @@ Page-flip effect (uploaded pages shown untouched, curled from the bottom-right c
 /absolute/01.jpg /absolute/02.jpg
 ```
 
-Preview first (720×960, before committing to a full render):
+Preview first (720×960 for `diary`, 1280×720 for `ink-comic`, before committing to a full render):
 
 ```text
 使用 $story-to-handdrawn-video 先给这个故事生成一个预览版。
 ```
 
-Notes: one complete sentence per beat by default; Codex Image2 is the default image generator. For exact one-line-per-scene planning, pass `--scene-contract` with a consecutive `01..NN` visual plan covering every non-empty source line. Each entry must include a 1–3 line `caption` and `duration_sec` in `2..15`; without the flag, the established automatic sentence splitter remains active. Keep the full spoken thought in the source line and the shorter screen copy in `caption`. When an episode introduces only one new recurring character, pass a narrow brief with `--character-reference-prompt`; the broader `--character-lock` remains continuity context and no longer expands the reference-sheet cast. For parallel episodes, pair an episode-specific `--output` with its `--manifest` so later planning cannot redirect an earlier import. Preserve and inspect every untouched illustration original. If a semantic PASS has only a near-white generated field, `scripts/normalize-illustration-master.py` may perform whole-frame normalization, uniform downscale, and exact-white centering; it must never rescue a cropped, semantically wrong, or identity-leaking image, and the derivative must still pass `scripts/audit-illustration-masters.py`. Before import or preview, run `python3 scripts/audit_motion_timeline.py <timeline> --expected-duration <seconds>` and the renderer's storyboard validator. During planning only, `validate-storyboard.mjs --allow-missing-assets <storyboard>` checks structure before illustrations exist; omit that flag for every import, preview, and delivery gate. The audit deliberately accepts only the same seven motions as the renderer: `hold`, `push_soft`, `push_left`, `push_right`, `pull_soft`, `pan_left`, and `pan_right`. Approve the silent master first, then use `scripts/build_story_audio.py` with an episode config. Narration is synthesized as connected acts; VTT timestamps measure sync but never cut prose into sentence clips. The example starts with the warm female `zh-CN-XiaoxiaoNeural` for intimate or allegorical Chinese narration, while `voice`, `rate`, `pitch`, and `volume` remain configurable and must be re-evaluated for a different genre, audience, or story relationship.
+Notes: one complete sentence per beat by default; Codex Image2 is the default image generator. For exact one-line-per-scene planning, pass `--scene-contract` with a consecutive `01..NN` visual plan covering every non-empty source line. Each entry must include a 1–3 line `caption` and `duration_sec` in `2..15`; without the flag, the established automatic sentence splitter remains active. Keep the full spoken thought in the source line and the shorter screen copy in `caption`. In `ink-comic`, freeze the final voiceover config and run `scripts/apply_verbatim_subtitles.py` before the final render so the bottom transcript matches the actual TTS; the shorter planning caption is retained only as `summary_text`. When an episode introduces only one new recurring character, pass a narrow brief with `--character-reference-prompt`; the broader `--character-lock` remains continuity context and no longer expands the reference-sheet cast. For parallel episodes, pair an episode-specific `--output` with its `--manifest` so later planning cannot redirect an earlier import. Preserve and inspect every untouched illustration original. If a semantic PASS has only a near-white generated field, `scripts/normalize-illustration-master.py` may perform whole-frame normalization, uniform downscale, and exact-white centering; it must never rescue a cropped, semantically wrong, or identity-leaking image, and the derivative must still pass `scripts/audit-illustration-masters.py`. Before import or preview, run `python3 scripts/audit_motion_timeline.py <timeline> --expected-duration <seconds>` and the renderer's storyboard validator. During planning only, `validate-storyboard.mjs --allow-missing-assets <storyboard>` checks structure before illustrations exist; omit that flag for every import, preview, and delivery gate. The audit deliberately accepts only the same seven motions as the renderer: `hold`, `push_soft`, `push_left`, `push_right`, `pull_soft`, `pan_left`, and `pan_right`. Approve the silent master first, then use `scripts/build_story_audio.py` with an episode config. Narration is synthesized as connected acts; VTT timestamps measure sync but never cut prose into sentence clips.
 
 Per-scene transitions use a strict contract. A missing
 `transition_to_next` means `cut`. A `fade` uses
@@ -321,7 +339,7 @@ layer-plan boundary tests.
 | Narrated review | no cover | `out/voiceover/<version>/episode_with_voiceover.mp4` |
 | Public release | audible cover | `out/voiceover/<version>/episode_release_with_cover.mp4` |
 
-Final picture is 1080×1440 H.264; preview is 720×960. Narration defaults to a 48 kHz PCM master around -16 LUFS and a stereo AAC release. The full behavior contract lives in [SKILL.md](skill-package/story-to-handdrawn-video/SKILL.md).
+Final picture is 1080×1440 H.264 in `diary` mode or 1920×1080 in `ink-comic`; previews are 720×960 or 1280×720 respectively. Narration defaults to a 48 kHz PCM master around -16 LUFS and a stereo AAC release. The full behavior contract lives in [SKILL.md](skill-package/story-to-handdrawn-video/SKILL.md).
 
 ### License
 

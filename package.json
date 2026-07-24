@@ -1,7 +1,7 @@
 {
   "name": "story-to-handdrawn-video",
-  "version": "1.0.0",
-  "description": "Turn stories or uploaded comic pages into narrated hand-drawn videos with natural motion, audible covers, and delivery QC.",
+  "version": "1.1.1",
+  "description": "Turn stories into 3:4 hand-drawn diary videos or 16:9 monochrome historical motion comics with narration and delivery QC.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -23,12 +23,14 @@
     "render:cover": "remotion still src/index.ts EpisodeCover out/cover.png",
     "audit:motion": "python3 scripts/audit_motion_timeline.py",
     "build:audio": "python3 scripts/build_story_audio.py",
+    "apply:subtitles": "python3 scripts/apply_verbatim_subtitles.py",
     "audit:delivery": "python3 scripts/audit_story_delivery.py",
     "render:uploaded": "remotion render src/index.ts UploadedPictureSilent out/uploaded_picture_silent.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p --muted --concurrency=1",
     "render:uploaded:preview": "remotion render src/index.ts UploadedPictureSilent out/uploaded_picture_silent-preview.mp4 --codec=h264 --crf=23 --pixel-format=yuv420p --muted --scale=0.6666666666666666 --concurrency=1",
-    "check": "npm run check:types && npm run check:storyboard && npm run check:transitions",
+    "check": "npm run check:types && npm run check:storyboard && npm run check:motion && npm run check:transitions",
     "check:types": "tsc --noEmit",
     "check:storyboard": "node scripts/validate-storyboard.mjs storyboard.json",
+    "check:motion": "node scripts/audit-motion-storyboard.mjs storyboard.json",
     "check:transitions": "node --test scripts/test-scene-transitions.mjs",
     "check:uploaded": "node scripts/validate-storyboard.mjs storyboard.uploaded.json"
   },

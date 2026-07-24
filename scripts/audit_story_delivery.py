@@ -8,6 +8,7 @@ import json
 import re
 import subprocess
 import sys
+from fractions import Fraction
 from pathlib import Path
 
 
@@ -79,6 +80,11 @@ def read_json(path: Path | None) -> dict | None:
     return json.loads(path.read_text(encoding="utf-8")) if path else None
 
 
+def frame_rate(value: str | int | float) -> float:
+    """Accept ffprobe rationals (30/1) and human CLI values (30)."""
+    return float(Fraction(str(value)))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("video", type=Path)
@@ -126,7 +132,9 @@ def main() -> int:
     if video_stream and args.expect_height is not None:
         checks["expected_height"] = video_stream.get("height") == args.expect_height
     if video_stream and args.expect_fps is not None:
-        checks["expected_fps"] = video_stream.get("r_frame_rate") == args.expect_fps
+        checks["expected_fps"] = abs(
+            frame_rate(video_stream.get("r_frame_rate", "0")) - frame_rate(args.expect_fps)
+        ) <= 0.001
     if args.expected_duration is not None:
         checks["duration_within_50ms"] = abs(duration - args.expected_duration) <= 0.05
 
