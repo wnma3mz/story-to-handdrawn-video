@@ -69,11 +69,14 @@ if (!['image2', 'font'].includes(textMode)) {
 if (!['codex', 'api'].includes(generator)) {
   throw new Error('--generator must be codex or api');
 }
-if (!['diary', 'ink-comic'].includes(visualMode)) {
-  throw new Error('--visual-mode must be diary or ink-comic');
+if (!['diary', 'ink-comic', 'essay'].includes(visualMode)) {
+  throw new Error('--visual-mode must be diary, ink-comic, or essay');
 }
 if (visualMode === 'ink-comic' && textMode === 'image2') {
   throw new Error('--visual-mode ink-comic uses code subtitles; choose --text-mode font');
+}
+if (visualMode === 'essay' && textMode === 'image2') {
+  throw new Error('--visual-mode essay uses code typesetting; choose --text-mode font');
 }
 if (generator === 'codex' && args.manifest && !args.output) {
   throw new Error(
@@ -464,54 +467,68 @@ for (let index = 0; index < storyParts.length; index += 1) {
   const masterSize = visualMode === 'ink-comic'
     ? '1536x1024'
     : usesImage2Text ? '1024x1536' : '1024x1024';
-  const captionPanel = usesImage2Text
-    ? `Top copy panel (pixels y=0–342): pure white background. Write ONLY this Simplified Chinese caption verbatim, preserving the explicit line breaks:
+  const captionPanel = visualMode === 'essay'
+    ? 'Use the entire canvas only for the illustration; do not add any text. All text will be typeset separately by code.'
+    : usesImage2Text
+      ? `Top copy panel (pixels y=0–342): pure white background. Write ONLY this Simplified Chinese caption verbatim, preserving the explicit line breaks:
 "${caption}"
 Use thick casual black felt-tip handwriting, 1–3 lines only, generous 48-pixel left/right margins, and a large readable letter size. Do not put any illustration or decorative mark in this panel. Do not place text below y=342.`
-    : 'Use the entire canvas only for the illustration; do not add any text.';
-  const textConstraint = usesImage2Text
-    ? 'no extra text outside the exact top caption, no letters or numbers in the illustration, no labels, captions, speech bubbles, logo, signature or watermark'
-    : 'no text, letters, numbers, labels, captions, speech bubbles, logo, signature or watermark';
-  const illustrationPanel = visualMode === 'ink-comic'
-    ? 'Use the entire landscape canvas for the illustration. Do not reserve a white caption panel.'
+      : 'Use the entire canvas only for the illustration; do not add any text.';
+  const textConstraint = visualMode === 'essay'
+    ? 'no text, letters, numbers, labels, captions, speech bubbles, logo, signature or watermark'
     : usesImage2Text
-      ? 'Illustration panel (pixels y=512–1536): use this exact lower 1024×1024 square for the scene. Leave the 342–512 transition band completely white.'
-      : 'Use the entire 1024×1024 square for the scene.';
-  const assetType = visualMode === 'ink-comic'
-    ? 'one full-bleed 16:9 production panel for a historical monochrome motion-comic'
-    : usesImage2Text
-      ? 'one vertical production master that will be split into a handwritten caption plate and a color illustration plate'
-      : 'one square color illustration master';
-  const compositionRule = visualMode === 'ink-comic'
-    ? 'Compose for a 16:9 full-screen frame. Use cinematic foreground, middle ground and background separation suitable for a restrained 2.5D push. Keep every face, hand and active clue inside the central 82% safe area and the bottom 18% free of essential detail for subtitles. Cropping secondary architecture at the frame edge is allowed; never crop the active clue.'
-    : 'Use a comfortably wide camera view. Keep the entire sparse scene in the lower-middle of its illustration square with generous white negative space. Reserve a clean white safe border of at least 10% on the left and right and 8% on the top and bottom. Every figure, limb, prop, building edge, roof, tree branch, rain stroke and motion mark must stay completely inside that safe border. Scale the scene down when necessary; never let any visible mark touch or cross a canvas edge.';
-  const colorRule = visualMode === 'ink-comic'
-    ? `Render 90–95% of the frame in black, charcoal and warm gray. Use ${accent} only on the single active clue or emotional focal object; do not color whole costumes or backgrounds.`
-    : 'Use selective muted wax-crayon color only: sage green, dusty blue, warm tan, brick red and warm yellow. Keep hair, trousers and other dark areas as black scribbles. Leave skin and most of the canvas pure white.';
-  const isolationRule = visualMode === 'ink-comic'
-    ? 'Show only characters and objects required by this beat. Large background calligraphy, subtitles, labels and exact title text will be added in code; generate none inside the illustration.'
-    : 'The character lock defines identities, not an automatic cast list. Show only characters explicitly named in the current sentence or strictly required for its immediate action. Never add family bystanders. Never show a future daughter, rescued child, grandmother, father or any other supporting character before that person is introduced by the narration. Do not carry any person, prop or setting forward merely because it appeared in another scene.';
+      ? 'no extra text outside the exact top caption, no letters or numbers in the illustration, no labels, captions, speech bubbles, logo, signature or watermark'
+      : 'no text, letters, numbers, labels, captions, speech bubbles, logo, signature or watermark';
+  const illustrationPanel = visualMode === 'essay'
+    ? 'Use the entire square canvas for a loose atmospheric mood illustration — not a literal scene, but an impressionistic visual companion to the text.'
+    : visualMode === 'ink-comic'
+      ? 'Use the entire landscape canvas for the illustration. Do not reserve a white caption panel.'
+      : usesImage2Text
+        ? 'Illustration panel (pixels y=512–1536): use this exact lower 1024×1024 square for the scene. Leave the 342–512 transition band completely white.'
+        : 'Use the entire 1024×1024 square for the scene.';
+  const assetType = visualMode === 'essay'
+    ? 'one square mood illustration plate for a personal essay or memoir'
+    : visualMode === 'ink-comic'
+      ? 'one full-bleed 16:9 production panel for a historical monochrome motion-comic'
+      : usesImage2Text
+        ? 'one vertical production master that will be split into a handwritten caption plate and a color illustration plate'
+        : 'one square color illustration master';
+  const compositionRule = visualMode === 'essay'
+    ? 'Compose a loose, atmospheric frame that evokes the emotional tone of the passage rather than depicting it literally. Use open composition with 20–30% of the canvas as quiet negative space. The illustration is a gentle companion to the text, never competing for attention. Abstract elements (light, shadow, texture, silhouette) are welcome; exact narrative detail should yield to mood. Keep all visible marks at least 12% from every canvas edge.'
+    : visualMode === 'ink-comic'
+      ? 'Compose for a 16:9 full-screen frame. Use cinematic foreground, middle ground and background separation suitable for a restrained 2.5D push. Keep every face, hand and active clue inside the central 82% safe area and the bottom 18% free of essential detail for subtitles. Cropping secondary architecture at the frame edge is allowed; never crop the active clue.'
+      : 'Use a comfortably wide camera view. Keep the entire sparse scene in the lower-middle of its illustration square with generous white negative space. Reserve a clean white safe border of at least 10% on the left and right and 8% on the top and bottom. Every figure, limb, prop, building edge, roof, tree branch, rain stroke and motion mark must stay completely inside that safe border. Scale the scene down when necessary; never let any visible mark touch or cross a canvas edge.';
+  const colorRule = visualMode === 'essay'
+    ? 'Use a soft, muted palette: warm sepia, faded indigo, dusty rose, sage green, and parchment cream. Apply loose watercolor or ink-wash technique with visible brush texture. Colors should feel nostalgic and weathered, like a well-loved book. Avoid harsh contrasts and saturated primaries. Leave at least 25% of the canvas in soft negative space.'
+    : visualMode === 'ink-comic'
+      ? `Render 90–95% of the frame in black, charcoal and warm gray. Use ${accent} only on the single active clue or emotional focal object; do not color whole costumes or backgrounds.`
+      : 'Use selective muted wax-crayon color only: sage green, dusty blue, warm tan, brick red and warm yellow. Keep hair, trousers and other dark areas as black scribbles. Leave skin and most of the canvas pure white.';
+  const isolationRule = visualMode === 'essay'
+    ? 'The illustration is a mood piece, not a literal scene. Evoke the emotional atmosphere with light, color, and texture. If a figure is required, show it as a partial silhouette or distant presence rather than a detailed portrait. Never depict exact narrative action step by step; the text carries the story, the image carries the feeling.'
+    : visualMode === 'ink-comic'
+      ? 'Show only characters and objects required by this beat. Large background calligraphy, subtitles, labels and exact title text will be added in code; generate none inside the illustration.'
+      : 'The character lock defines identities, not an automatic cast list. Show only characters explicitly named in the current sentence or strictly required for its immediate action. Never add family bystanders. Never show a future daughter, rescued child, grandmother, father or any other supporting character before that person is introduced by the narration. Do not carry any person, prop or setting forward merely because it appeared in another scene.';
 
   const hasContinuityReference = Boolean(previousColor) || Boolean(codexCharacterReference);
   const masterPrompt = writePrompt(
     `${id}_master.txt`,
-    `Use case: historical-scene
+    `Use case: ${visualMode === 'essay' ? 'essay-mood' : 'historical-scene'}
 Asset type: ${assetType}.
-Input images: ${visualMode === 'ink-comic' ? 'the fixed character sheet, when supplied, controls identity only' : 'the supplied original-video frames are style references'}${hasContinuityReference ? '; the fixed protagonist character sheet is the identity reference' : ''}. Ignore all text in references.
-Narrative sentence to illustrate: "${text}"
-Scene direction: ${visualDirection}
-Narrative shot type: ${shotType}
-Primary focal area: ${focus}
-Create one concrete, immediately readable tableau for that sentence. Use the locked recurring protagonists whenever the current sentence requires them.
-Character lock: ${characterLock}
+Input images: ${visualMode === 'ink-comic' ? 'the fixed character sheet, when supplied, controls identity only' : visualMode === 'essay' ? 'none required; the supplied style frames establish the loose watercolor/ink-wash visual language only; ignore their people, composition and text' : 'the supplied original-video frames are style references'}${!['essay'].includes(visualMode) && hasContinuityReference ? '; the fixed protagonist character sheet is the identity reference' : ''}. ${visualMode === 'essay' ? 'These are mood illustrations for a personal memoir; each image should feel like a faded memory, a half-remembered moment, not a documentary photograph.' : 'Ignore all text in references.'}
+${visualMode === 'essay' ? `Essay passage to evoke: "${text}"` : `Narrative sentence to illustrate: "${text}"`}
+${visualMode === 'essay' ? `Emotional register: ${visualDirection}` : `Scene direction: ${visualDirection}`}
+${visualMode === 'essay' ? '' : `Narrative shot type: ${shotType}`}
+${visualMode === 'essay' ? '' : `Primary focal area: ${focus}`}
+Create ${visualMode === 'essay' ? 'one atmospheric, emotionally resonant image that captures the mood and essence of the passage without illustrating it literally. Let the composition breathe. Use light, color temperature, and texture to carry the emotional weight. The text will tell the story; the image should make the viewer feel it.' : 'one concrete, immediately readable tableau for that sentence. Use the locked recurring protagonists whenever the current sentence requires them.'}
+${visualMode === 'essay' ? '' : `Character lock: ${characterLock}`}
 Style: ${styleLock}
 ${captionPanel}
 ${illustrationPanel}
 Composition: ${compositionRule}
 Color: ${colorRule}
-Continuity: preserve the locked character design. Use the fixed character sheet only for the protagonist's identity, never copy its pose or composition. Include only people required by the current narrative sentence.
-Narrative isolation: ${isolationRule}
-Constraints: non-graphic historical suspense, no gore; period-accurate Northern Song clothing, architecture and objects; ${textConstraint}; no photorealism, glossy 3D, anime styling, modern props or watermark.`,
+${visualMode === 'essay' ? '' : `Continuity: preserve the locked character design. Use the fixed character sheet only for the protagonist's identity, never copy its pose or composition. Include only people required by the current narrative sentence.`}
+${visualMode === 'essay' ? '' : `Narrative isolation: ${isolationRule}`}
+Constraints: ${visualMode === 'essay' ? 'warm personal memoir illustration, non-graphic; impressionistic watercolor or ink-wash style with visible brush texture; no hard outlines or cartoon linework; no photorealism, glossy 3D, anime styling, modern props or watermark; ' : `non-graphic historical suspense, no gore; period-accurate Northern Song clothing, architecture and objects; `}${textConstraint}${visualMode === 'essay' ? '' : '; no photorealism, glossy 3D, anime styling, modern props or watermark'}.`,
   );
 
   if (shouldGenerateWithApi) {
@@ -544,6 +561,29 @@ Constraints: non-graphic historical suspense, no gore; period-accurate Northern 
         {cwd: root, stdio: 'inherit'},
       );
     }
+    if (visualMode !== 'essay') {
+      execFileSync(
+        'ffmpeg',
+        [
+          '-hide_banner',
+          '-loglevel',
+          'error',
+          '-i',
+          absoluteAsset(masterName),
+          '-vf',
+          visualMode === 'ink-comic'
+            ? 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,format=gray,eq=contrast=1.16:brightness=-0.02,unsharp=5:5:0.42:5:5:0'
+            : usesImage2Text
+            ? 'crop=1024:1024:0:512,format=gray,eq=contrast=1.18:brightness=0.035,unsharp=5:5:0.55:5:5:0'
+            : 'format=gray,eq=contrast=1.18:brightness=0.035,unsharp=5:5:0.55:5:5:0',
+          '-frames:v',
+          '1',
+          '-y',
+          absoluteAsset(bwName),
+        ],
+        {cwd: root, stdio: 'inherit'},
+      );
+    }
     execFileSync(
       'ffmpeg',
       [
@@ -553,30 +593,11 @@ Constraints: non-graphic historical suspense, no gore; period-accurate Northern 
         '-i',
         absoluteAsset(masterName),
         '-vf',
-        visualMode === 'ink-comic'
-          ? 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,format=gray,eq=contrast=1.16:brightness=-0.02,unsharp=5:5:0.42:5:5:0'
-          : usesImage2Text
-          ? 'crop=1024:1024:0:512,format=gray,eq=contrast=1.18:brightness=0.035,unsharp=5:5:0.55:5:5:0'
-          : 'format=gray,eq=contrast=1.18:brightness=0.035,unsharp=5:5:0.55:5:5:0',
-        '-frames:v',
-        '1',
-        '-y',
-        absoluteAsset(bwName),
-      ],
-      {cwd: root, stdio: 'inherit'},
-    );
-    execFileSync(
-      'ffmpeg',
-      [
-        '-hide_banner',
-        '-loglevel',
-        'error',
-        '-i',
-        absoluteAsset(masterName),
-        '-vf',
-        visualMode === 'ink-comic'
-          ? 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080'
-          : usesImage2Text ? 'crop=1024:1024:0:512' : 'null',
+        visualMode === 'essay'
+          ? 'scale=868:698:force_original_aspect_ratio=decrease,pad=868:698:(ow-iw)/2:(oh-ih)/2:#FCFAF5'
+          : visualMode === 'ink-comic'
+            ? 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080'
+            : usesImage2Text ? 'crop=1024:1024:0:512' : 'null',
         '-frames:v',
         '1',
         '-y',
@@ -596,37 +617,48 @@ Constraints: non-graphic historical suspense, no gore; period-accurate Northern 
       output_master: absoluteAsset(masterName),
       references: [
         ...(visualMode === 'ink-comic' ? [] : [referenceBw, referenceColor]),
-        codexCharacterReference,
+        ...(visualMode === 'essay' ? [] : [codexCharacterReference].filter(Boolean)),
       ].filter(Boolean),
     });
   }
 
+  const essayMotion = visualMode === 'essay'
+    ? (['hold', 'push_soft', 'pull_soft'].includes(motion) ? motion : 'push_soft')
+    : motion;
+
   scenes.push({
     id,
-    duration_sec:
-      Number.isFinite(plannedDuration) && plannedDuration >= 2 && plannedDuration <= 15
-        ? plannedDuration
-        : durationFor(caption),
+    duration_sec: visualMode === 'essay'
+      ? (Number.isFinite(plannedDuration) && plannedDuration >= 8 && plannedDuration <= 30
+          ? plannedDuration
+          : Math.max(10, durationFor(caption) * 2.2))
+      : (Number.isFinite(plannedDuration) && plannedDuration >= 2 && plannedDuration <= 15
+          ? plannedDuration
+          : durationFor(caption)),
     text: caption,
     narration: text,
     visual: visualDirection,
     shot: shotType,
     focus,
-    motion,
+    motion: essayMotion,
     transition_to_next: sceneTransition,
     visual_mode: visualMode,
     scene_kind: sceneKind,
     glyph,
     case_label: caseLabel,
     accent,
-    layers: visualMode === 'ink-comic' ? ['text', 'color'] : ['text', 'bw_full', 'color'],
-    color_hint: visualMode === 'ink-comic'
-      ? `全画面黑白灰，仅用 ${accent} 强调一个关键证物或情绪焦点`
-      : '仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白',
+    layers: visualMode === 'essay'
+      ? ['text', 'color']
+      : visualMode === 'ink-comic' ? ['text', 'color'] : ['text', 'bw_full', 'color'],
+    color_hint: visualMode === 'essay'
+      ? '柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上'
+      : visualMode === 'ink-comic'
+        ? `全画面黑白灰，仅用 ${accent} 强调一个关键证物或情绪焦点`
+        : '仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白',
     detail_hint: null,
     assets: {
-      text_image: usesImage2Text ? projectAsset(textName) : null,
-      bw: projectAsset(bwName),
+      text_image: !['essay', 'ink-comic'].includes(visualMode) && usesImage2Text ? projectAsset(textName) : null,
+      bw: visualMode === 'essay' ? null : projectAsset(bwName),
       detail: null,
       color: projectAsset(colorName),
     },

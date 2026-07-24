@@ -1,6 +1,6 @@
 export type LayerId = 'text' | 'bw_full' | 'detail' | 'color';
 
-export type VisualMode = 'diary' | 'ink-comic';
+export type VisualMode = 'diary' | 'ink-comic' | 'essay';
 
 export type SceneData = {
   id: string;

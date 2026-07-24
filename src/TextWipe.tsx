@@ -2,11 +2,14 @@ import type {CSSProperties} from 'react';
 import {Img, staticFile, useCurrentFrame} from 'remotion';
 import {revealProgress} from './easing';
 
+type TextWipeVariant = 'diary' | 'essay';
+
 type TextWipeProps = {
   text: string;
   textAsset?: string | null;
   startFrame: number;
   durationFrames: number;
+  variant?: TextWipeVariant;
 };
 
 const textStyle = (fontSize: number): CSSProperties => ({
@@ -24,10 +27,15 @@ const textStyle = (fontSize: number): CSSProperties => ({
   transform: 'rotate(-0.35deg)',
 });
 
-const fallbackFontSize = (text: string) => {
+const fallbackFontSize = (text: string, variant: TextWipeVariant = 'diary') => {
   const lines = text.split('\n').filter(Boolean);
   const lineCount = Math.max(1, lines.length);
   const longestLine = Math.max(...lines.map((line) => line.length), 1);
+  if (variant === 'essay') {
+    const widthLimited = Math.floor(870 / (longestLine * 1.12));
+    const heightLimited = Math.floor(560 / (lineCount * 1.36));
+    return Math.max(52, Math.min(96, widthLimited, heightLimited));
+  }
   const widthLimited = Math.floor(850 / (longestLine * 1.08));
   const heightLimited = Math.floor(306 / (lineCount * 1.28));
   return Math.max(48, Math.min(82, widthLimited, heightLimited));
@@ -38,10 +46,40 @@ export const TextWipe: React.FC<TextWipeProps> = ({
   textAsset,
   startFrame,
   durationFrames,
+  variant = 'diary',
 }) => {
   const frame = useCurrentFrame();
   const progress = revealProgress(frame, startFrame, durationFrames);
-  const fontSize = fallbackFontSize(text);
+  const fontSize = fallbackFontSize(text, variant);
+
+  if (variant === 'essay') {
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          zIndex: 40,
+          top: 84,
+          left: 120,
+          right: 106,
+          bottom: 420,
+          display: 'flex',
+          alignItems: 'flex-start',
+          clipPath: `inset(0 0 ${(1 - progress) * 100}% 0)`,
+        }}
+      >
+        <p
+          style={{
+            ...textStyle(fontSize),
+            maxWidth: 840,
+            lineHeight: 1.48,
+            letterSpacing: '0.03em',
+          }}
+        >
+          {text}
+        </p>
+      </div>
+    );
+  }
 
   if (textAsset) {
     return (

@@ -2,6 +2,7 @@ import {
   AbsoluteFill,
   Img,
   staticFile,
+  useCurrentFrame,
   useVideoConfig,
 } from 'remotion';
 import {LayerWipe} from './LayerWipe';
@@ -12,6 +13,7 @@ import type {SceneData} from './types';
 
 export const Scene: React.FC<{scene: SceneData}> = ({scene}) => {
   const {fps} = useVideoConfig();
+  const frame = useCurrentFrame();
   const total = Math.round(scene.duration_sec * fps);
   const at = (ratio: number) => Math.round(total * ratio);
   const has = (layer: string) => scene.layers.includes(layer as never);
@@ -22,6 +24,45 @@ export const Scene: React.FC<{scene: SceneData}> = ({scene}) => {
 
   if (scene.visual_mode === 'ink-comic') {
     return <InkComicScene scene={scene} />;
+  }
+
+  if (scene.visual_mode === 'essay') {
+    const colorAsset = scene.assets.color;
+    const colorFadeIn = Math.round(total * 0.18);
+    const colorOpacity = Math.min(1, colorAsset ? Math.max(0, frame / Math.max(1, colorFadeIn)) : 0);
+    return (
+      <AbsoluteFill style={{backgroundColor: '#FCFAF5', overflow: 'hidden'}}>
+        <MotionStage scene={scene}>
+          {colorAsset ? (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                opacity: colorOpacity,
+              }}
+            >
+              <Img
+                src={staticFile(colorAsset)}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  objectPosition: 'center center',
+                  filter: 'contrast(0.95) saturate(0.82)',
+                }}
+              />
+            </div>
+          ) : null}
+        </MotionStage>
+
+        <TextWipe
+          text={scene.text}
+          startFrame={0}
+          durationFrames={total}
+          variant="essay"
+        />
+      </AbsoluteFill>
+    );
   }
 
   if (fullUploadedPage) {

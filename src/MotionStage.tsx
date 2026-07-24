@@ -90,10 +90,10 @@ export const MotionStage: React.FC<
       style={{
         position: 'absolute',
         zIndex: 10,
-        left: scene.visual_mode === 'ink-comic' ? 0 : 74,
-        right: scene.visual_mode === 'ink-comic' ? 0 : 74,
-        top: scene.visual_mode === 'ink-comic' ? 0 : 382,
-        bottom: scene.visual_mode === 'ink-comic' ? 0 : 42,
+        left: scene.visual_mode === 'ink-comic' ? 0 : scene.visual_mode === 'essay' ? 106 : 74,
+        right: scene.visual_mode === 'ink-comic' ? 0 : scene.visual_mode === 'essay' ? 106 : 74,
+        top: scene.visual_mode === 'ink-comic' ? 0 : scene.visual_mode === 'essay' ? 680 : 382,
+        bottom: scene.visual_mode === 'ink-comic' ? 0 : scene.visual_mode === 'essay' ? 62 : 42,
         overflow: 'hidden',
       }}
     >

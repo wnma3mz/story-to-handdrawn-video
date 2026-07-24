@@ -186,9 +186,135 @@ const chineseChapterNumber = (chapter: string): number | null => {
   return digit[value] ?? null;
 };
 
+const EssayCover: React.FC = () => {
+  const cover = storyboard.project.cover || {};
+  const title = cover.title || storyboard.project.title;
+  const seriesTitle = cover.series_title || '随笔 · 手绘动画';
+  const background = cover.background || '#F4EDE0';
+  const accent = cover.accent || '#8B6E4E';
+  const titleLines = title
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const effectiveLines =
+    titleLines.length > 0 ? titleLines : balancedTitleLines(title);
+  const longestLine = Math.max(
+    ...effectiveLines.map((line) => Array.from(line).length),
+    1,
+  );
+  const titleFontSize =
+    longestLine <= 6
+      ? 98
+      : longestLine <= 10
+        ? 84
+        : Math.max(58, Math.floor(760 / longestLine));
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: background,
+        color: '#3E3230',
+        fontFamily: 'OriginalDiaryHand, Songti SC, STSong, serif',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background:
+            'radial-gradient(ellipse 68% 58% at 50% 44%, rgba(255,250,240,0.9) 0%, rgba(232,218,195,0.4) 100%)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          top: 76,
+          left: 0,
+          right: 0,
+          textAlign: 'center',
+          fontSize: 28,
+          letterSpacing: '0.2em',
+          color: accent,
+        }}
+      >
+        {seriesTitle}
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          top: 140,
+          left: 0,
+          right: 0,
+          height: 2,
+        }}
+      >
+        <div
+          style={{
+            margin: '0 auto',
+            width: 96,
+            height: 2,
+            backgroundColor: accent,
+            opacity: 0.48,
+          }}
+        />
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          top: 190,
+          left: 120,
+          right: 120,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div
+          style={{
+            fontSize: titleFontSize,
+            lineHeight: 1.22,
+            letterSpacing: '0.04em',
+            textAlign: 'center',
+            color: '#2C2822',
+          }}
+        >
+          {effectiveLines.map((line, index) => (
+            <div key={`${index}-${line}`} style={{whiteSpace: 'nowrap'}}>
+              {line}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 82,
+          left: 0,
+          right: 0,
+          textAlign: 'center',
+          fontSize: 26,
+          letterSpacing: '0.15em',
+          color: accent,
+          opacity: 0.7,
+        }}
+      >
+        {cover.episode_label || '一篇随笔'}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 export const EpisodeCover: React.FC = () => {
   if (storyboard.project.visual_mode === 'ink-comic') {
     return <InkComicCover />;
+  }
+  if (storyboard.project.visual_mode === 'essay') {
+    return <EssayCover />;
   }
   const parsed = splitTitle(storyboard.project.title);
   const cover = storyboard.project.cover || {};
