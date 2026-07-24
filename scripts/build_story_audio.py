@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -122,12 +123,28 @@ def loudnorm_filter(path: Path, mastering: dict) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--storyboard", type=Path, default=Path("storyboard.json"))
-    parser.add_argument("--picture", type=Path, default=Path("out/picture_silent.mp4"))
-    parser.add_argument("--cover", type=Path, default=Path("out/cover.png"))
+    parser.add_argument("--episode", type=str, default=os.environ.get("EPISODE", "default"))
+    parser.add_argument("--picture", type=Path)
+    parser.add_argument("--cover", type=Path)
     parser.add_argument("--config", type=Path, required=True)
-    parser.add_argument("--output-dir", type=Path, default=Path("out/voiceover"))
+    parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
+
+    episode = args.episode
+    picture = args.picture or Path(f"out/{episode}/silent.mp4")
+    cover = args.cover or Path(f"out/{episode}/cover.png")
+    output = args.output_dir or Path(f"out/{episode}/voiced")
+    args.picture = picture
+    args.cover = cover
+    output.mkdir(parents=True, exist_ok=True)
+
+    work_dir = Path(f".work/{episode}")
+    raw_dir = work_dir / "raw-groups"
+    group_dir = work_dir / "continuous-groups"
+    work_dir = work_dir / "work"
+    for directory in (raw_dir, group_dir, work_dir):
+        directory.mkdir(parents=True, exist_ok=True)
 
     storyboard = json.loads(args.storyboard.read_text(encoding="utf-8"))
     config = json.loads(args.config.read_text(encoding="utf-8"))
@@ -135,12 +152,6 @@ def main() -> int:
     continuity = config["continuity"]
     if not continuity.get("groups"):
         raise ValueError("continuity.groups must contain at least one narration group")
-    output = args.output_dir
-    raw_dir = output / "raw-groups"
-    group_dir = output / "continuous-groups"
-    work_dir = output / "work"
-    for directory in (raw_dir, group_dir, work_dir):
-        directory.mkdir(parents=True, exist_ok=True)
 
     scene_list = storyboard["scenes"]
     fps = int(storyboard["project"]["fps"])
@@ -282,7 +293,7 @@ def main() -> int:
         "-ar", "48000", "-ac", "1", "-c:a", "pcm_s24le", str(master),
     ])
 
-    voiced = output / "episode_with_voiceover.mp4"
+    voiced = output / "preview.mp4"
     run([
         "ffmpeg", "-y", "-v", "error", "-i", str(args.picture), "-i", str(master),
         "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
@@ -335,7 +346,7 @@ def main() -> int:
     width = int(storyboard["project"]["width"])
     height = int(storyboard["project"]["height"])
     frames = max(1, round(cover_duration * fps))
-    release = output / "episode_release_with_cover.mp4"
+    release = output / "release.mp4"
     cover_filter = (
         f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
         f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,"
@@ -360,6 +371,10 @@ def main() -> int:
         "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
         "-movflags", "+faststart", str(release),
     ])
+
+    releases_dir = Path("out/releases")
+    releases_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(release, releases_dir / f"{episode}.mp4")
 
     primary_errors = [abs(float(row["semantic_start_error_sec"])) for row in cue_rows]
     max_error = max(primary_errors, default=0.0)

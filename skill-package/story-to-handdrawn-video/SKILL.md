@@ -128,10 +128,8 @@ Copy `examples/voiceover.example.json`, then replace its group text, scene IDs, 
 ```bash
 python3 scripts/build_story_audio.py \
   --storyboard storyboard.json \
-  --picture out/picture_silent.mp4 \
-  --cover out/cover.png \
-  --config /absolute/voiceover.json \
-  --output-dir out/voiceover/v01
+  --episode <slug> \
+  --config /absolute/voiceover.json
 ```
 
 Each `speech_text` must yield exactly one VTT cue per `scene_id`. If sync is outside the configured limit, revise the episode config and regenerate. Do not modify the audio by sentence.
@@ -152,10 +150,10 @@ Audit:
 
 ```bash
 python3 scripts/audit_story_delivery.py \
-  out/voiceover/v01/episode_release_with_cover.mp4 \
-  --master out/voiceover/v01/narration-master.wav \
-  --build out/voiceover/v01/build.json \
-  --sync-map out/voiceover/v01/sync-map.json \
+  out/<episode>/voiced/release.mp4 \
+  --master out/<episode>/voiced/narration-master.wav \
+  --build .work/<episode>/work/build.json \
+  --sync-map .work/<episode>/work/sync-map.json \
   --cover-duration 2.7 \
   --expect-width 1080 --expect-height 1440 --expect-fps 30/1
 ```
@@ -180,9 +178,10 @@ python3 scripts/audit_story_delivery.py \
 
 ## Output contract
 
-- `out/picture_silent.mp4`: approved H.264 silent picture master, 1080×1440 in `diary` or 1920×1080 in `ink-comic`.
-- `out/cover.png`: exact code-typeset, non-white cover still.
-- `out/voiceover/<version>/narration-master.wav`: 48 kHz, 24-bit PCM, mono narration timeline.
-- `out/voiceover/<version>/episode_with_voiceover.mp4`: no-cover archive/review master.
-- `out/voiceover/<version>/episode_release_with_cover.mp4`: H.264/AAC public release with audible cover.
-- `build.json`, `sync-map.json`, and QC report: reproducibility and acceptance evidence.
+- `out/<episode>/silent.mp4`: approved H.264 silent picture master, 1080×1440 in `diary`/`essay` or 1920×1080 in `ink-comic`.
+- `out/<episode>/cover.png`: exact code-typeset, non-white cover still.
+- `out/<episode>/voiced/narration-master.wav`: 48 kHz, 24-bit PCM, mono narration timeline.
+- `out/<episode>/voiced/preview.mp4`: no-cover review master.
+- `out/<episode>/voiced/release.mp4`: H.264/AAC public release with audible cover.
+- `out/releases/<episode>.mp4`: flat quick-find copy of the public release.
+- `.work/<episode>/`: intermediate TTS groups, VTT, build.json, sync-map.json — not committed.

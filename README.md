@@ -166,12 +166,12 @@ python3 scripts/audit-illustration-masters.py \
 npm run render:cover
 python3 scripts/build_story_audio.py \
   --config examples/voiceover.example.json \
-  --output-dir out/voiceover/v01
+  --episode <slug>
 python3 scripts/audit_story_delivery.py \
-  out/voiceover/v01/episode_release_with_cover.mp4 \
-  --master out/voiceover/v01/narration-master.wav \
-  --build out/voiceover/v01/build.json \
-  --sync-map out/voiceover/v01/sync-map.json \
+  out/<slug>/voiced/release.mp4 \
+  --master out/<slug>/voiced/narration-master.wav \
+  --build out/<slug>/voiced/build.json \
+  --sync-map out/<slug>/voiced/sync-map.json \
   --cover-duration 2.7
 ```
 
@@ -193,14 +193,18 @@ npm run render
 
 | 输入 | 模式 | 输出路径 |
 | --- | --- | --- |
-| 故事文本 | 正式 | `out/picture_silent.mp4` |
-| 故事文本 | 预览 | `out/picture_silent-preview.mp4` |
-| 上传图片 | 正式 | `out/uploaded_picture_silent.mp4` |
-| 上传图片 | 预览 | `out/uploaded_picture_silent-preview.mp4` |
-| 配音 | 无封面审片版 | `out/voiceover/<version>/episode_with_voiceover.mp4` |
-| 配音 | 有声封面发布版 | `out/voiceover/<version>/episode_release_with_cover.mp4` |
+| 故事文本 | 正式 | `out/<episode>/silent.mp4` |
+| 故事文本 | 预览 | `out/<episode>/silent-preview.mp4` |
+| 上传图片 | 正式 | `out/<episode>/uploaded.mp4` |
+| 上传图片 | 预览 | `out/<episode>/uploaded-preview.mp4` |
+| 封面 | 静态图 | `out/<episode>/cover.png` |
+| 配音 | 审片版 | `out/<episode>/voiced/preview.mp4` |
+| 配音 | 发布版 | `out/<episode>/voiced/release.mp4` · `out/releases/<episode>.mp4`（快查副本） |
 
-- 分辨率：`diary` 正式版 1080×1440；`ink-comic` 正式版 1920×1080
+多集并发时设置 `EPISODE` 环境变量互不覆盖：`EPISODE=s01-e05 npm run render`。
+中间产物（TTS 分组、VTT）写入 `.work/<episode>/`。
+
+- 分辨率：`diary`/`essay` 正式版 1080×1440；`ink-comic` 正式版 1920×1080
 - 画面母版:H.264,静音
 - 旁白母版:48 kHz / 24-bit PCM / mono，默认约 -16 LUFS、真峰值不高于 -1.5 dBTP
 - 发布版:H.264 + 48 kHz stereo AAC；封面时段可听，主画面与故事旁白同一时刻开始
@@ -332,14 +336,16 @@ layer-plan boundary tests.
 
 | Input | Mode | Path |
 | --- | --- | --- |
-| Story text | final | `out/picture_silent.mp4` |
-| Story text | preview | `out/picture_silent-preview.mp4` |
-| Uploaded images | final | `out/uploaded_picture_silent.mp4` |
-| Uploaded images | preview | `out/uploaded_picture_silent-preview.mp4` |
-| Narrated review | no cover | `out/voiceover/<version>/episode_with_voiceover.mp4` |
-| Public release | audible cover | `out/voiceover/<version>/episode_release_with_cover.mp4` |
+| Story text | final | `out/<episode>/silent.mp4` |
+| Story text | preview | `out/<episode>/silent-preview.mp4` |
+| Uploaded images | final | `out/<episode>/uploaded.mp4` |
+| Uploaded images | preview | `out/<episode>/uploaded-preview.mp4` |
+| Narrated review | no cover | `out/<episode>/voiced/preview.mp4` |
+| Public release | audible cover | `out/<episode>/voiced/release.mp4` · `out/releases/<episode>.mp4` (quick-find copy) |
 
-Final picture is 1080×1440 H.264 in `diary` mode or 1920×1080 in `ink-comic`; previews are 720×960 or 1280×720 respectively. Narration defaults to a 48 kHz PCM master around -16 LUFS and a stereo AAC release. The full behavior contract lives in [SKILL.md](skill-package/story-to-handdrawn-video/SKILL.md).
+Set `EPISODE=...` for multi-episode isolation. Intermediates (TTS groups, VTT) reside in `.work/<episode>/`.
+
+Final picture is 1080×1440 H.264 in `diary`/`essay` mode or 1920×1080 in `ink-comic`; previews follow the same aspect ratio. Narration defaults to a 48 kHz PCM master around -16 LUFS and a stereo AAC release. The full behavior contract lives in [SKILL.md](skill-package/story-to-handdrawn-video/SKILL.md).
 
 ### License
 
