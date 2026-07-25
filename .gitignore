@@ -2,6 +2,7 @@ node_modules/
 build/
 out/
 .work/
+episodes/
 release/
 public/assets/generated/
 prompts/generated/
