@@ -276,6 +276,21 @@ const safeTitle =
     .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 32) || 'story';
+const codePlateMotifs = new Set([
+  'window',
+  'desk_night',
+  'bike',
+  'street',
+  'two_figures',
+  'temple_gate',
+  'empty_cup',
+  'ghost_window',
+  'detour',
+  'farewell',
+  'abstract_wash',
+  'book_lamp',
+]);
+
 const illustrationPlan = Object.fromEntries(
   Object.entries(visualPlan).map(([id, entry]) => {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
@@ -287,6 +302,9 @@ const illustrationPlan = Object.fromEntries(
       focus: entry.focus,
       scene_kind: entry.scene_kind,
       accent: entry.accent,
+      plate_mode: entry.plate_mode,
+      code_plate: entry.code_plate,
+      svg: entry.svg,
     }];
   }),
 );
@@ -463,7 +481,50 @@ for (let index = 0; index < storyParts.length; index += 1) {
   const caseLabel = structuredVisualPlan.case_label ? String(structuredVisualPlan.case_label) : null;
   const accent = structuredVisualPlan.accent ? String(structuredVisualPlan.accent) : '#A93B32';
   const plannedDuration = Number(structuredVisualPlan.duration_sec);
-  const usesImage2Text = visualMode === 'diary' && textMode === 'image2';
+  const plateModeRaw = String(structuredVisualPlan.plate_mode || '').trim();
+  let plateMode = ['raster', 'svg', 'code'].includes(plateModeRaw)
+    ? plateModeRaw
+    : structuredVisualPlan.code_plate
+      ? 'code'
+      : structuredVisualPlan.svg
+        ? 'svg'
+        : 'raster';
+  let codePlate = null;
+  let svgAsset = null;
+  if (plateMode === 'code') {
+    const rawPlate = structuredVisualPlan.code_plate;
+    if (!rawPlate || typeof rawPlate !== 'object' || Array.isArray(rawPlate)) {
+      throw new Error(`${id}: plate_mode=code requires code_plate object with motif`);
+    }
+    const motif = String(rawPlate.motif || '').trim();
+    if (!codePlateMotifs.has(motif)) {
+      throw new Error(
+        `${id}: unknown code_plate.motif ${JSON.stringify(motif)}; ` +
+          `expected one of ${[...codePlateMotifs].join(', ')}`,
+      );
+    }
+    codePlate = {
+      motif,
+      ...(rawPlate.background ? {background: String(rawPlate.background)} : {}),
+      ...(rawPlate.ink ? {ink: String(rawPlate.ink)} : {}),
+      ...(Array.isArray(rawPlate.accents)
+        ? {accents: rawPlate.accents.map((value) => String(value))}
+        : {}),
+      ...(Number.isFinite(Number(rawPlate.seed)) ? {seed: Number(rawPlate.seed)} : {}),
+    };
+  } else if (plateMode === 'svg') {
+    const rawSvg = String(
+      structuredVisualPlan.svg ||
+        (structuredVisualPlan.assets && structuredVisualPlan.assets.svg) ||
+        '',
+    ).trim();
+    if (!rawSvg) {
+      throw new Error(`${id}: plate_mode=svg requires svg path relative to public/`);
+    }
+    svgAsset = rawSvg.replace(/^public\//, '');
+  }
+  const needsRasterMaster = plateMode === 'raster';
+  const usesImage2Text = needsRasterMaster && visualMode === 'diary' && textMode === 'image2';
   const masterSize = visualMode === 'ink-comic'
     ? '1536x1024'
     : usesImage2Text ? '1024x1536' : '1024x1024';
@@ -531,7 +592,41 @@ ${visualMode === 'essay' ? '' : `Narrative isolation: ${isolationRule}`}
 Constraints: ${visualMode === 'essay' ? 'warm personal memoir illustration, non-graphic; impressionistic watercolor or ink-wash style with visible brush texture; no hard outlines or cartoon linework; no photorealism, glossy 3D, anime styling, modern props or watermark; ' : `non-graphic historical suspense, no gore; period-accurate Northern Song clothing, architecture and objects; `}${textConstraint}${visualMode === 'essay' ? '' : '; no photorealism, glossy 3D, anime styling, modern props or watermark'}.`,
   );
 
-  if (shouldGenerateWithApi) {
+  // Non-raster plates skip Image2 entirely: code motifs render in Remotion,
+  // svg plates load static public assets. Only raster scenes write prompts/jobs.
+  let masterPrompt = null;
+  if (needsRasterMaster) {
+    masterPrompt = writePrompt(
+      `${id}_master.txt`,
+      `Use case: ${visualMode === 'essay' ? 'essay-mood' : 'historical-scene'}
+Asset type: ${assetType}.
+Input images: ${visualMode === 'ink-comic' ? 'the fixed character sheet, when supplied, controls identity only' : visualMode === 'essay' ? 'none required; the supplied style frames establish the loose watercolor/ink-wash visual language only; ignore their people, composition and text' : 'the supplied original-video frames are style references'}${!['essay'].includes(visualMode) && hasContinuityReference ? '; the fixed protagonist character sheet is the identity reference' : ''}. ${visualMode === 'essay' ? 'These are mood illustrations for a personal memoir; each image should feel like a faded memory, a half-remembered moment, not a documentary photograph.' : 'Ignore all text in references.'}
+${visualMode === 'essay' ? `Essay passage to evoke: "${text}"` : `Narrative sentence to illustrate: "${text}"`}
+${visualMode === 'essay' ? `Emotional register: ${visualDirection}` : `Scene direction: ${visualDirection}`}
+${visualMode === 'essay' ? '' : `Narrative shot type: ${shotType}`}
+${visualMode === 'essay' ? '' : `Primary focal area: ${focus}`}
+Create ${visualMode === 'essay' ? 'one atmospheric, emotionally resonant image that captures the mood and essence of the passage without illustrating it literally. Let the composition breathe. Use light, color temperature, and texture to carry the emotional weight. The text will tell the story; the image should make the viewer feel it.' : 'one concrete, immediately readable tableau for that sentence. Use the locked recurring protagonists whenever the current sentence requires them.'}
+${visualMode === 'essay' ? '' : `Character lock: ${characterLock}`}
+Style: ${styleLock}
+${captionPanel}
+${illustrationPanel}
+Composition: ${compositionRule}
+Color: ${colorRule}
+${visualMode === 'essay' ? '' : `Continuity: preserve the locked character design. Use the fixed character sheet only for the protagonist's identity, never copy its pose or composition. Include only people required by the current narrative sentence.`}
+${visualMode === 'essay' ? '' : `Narrative isolation: ${isolationRule}`}
+Constraints: ${visualMode === 'essay' ? 'warm personal memoir illustration, non-graphic; impressionistic watercolor or ink-wash style with visible brush texture; no hard outlines or cartoon linework; no photorealism, glossy 3D, anime styling, modern props or watermark; ' : `non-graphic historical suspense, no gore; period-accurate Northern Song clothing, architecture and objects; `}${textConstraint}${visualMode === 'essay' ? '' : '; no photorealism, glossy 3D, anime styling, modern props or watermark'}.`,
+    );
+  } else {
+    writePrompt(
+      `${id}_plate.txt`,
+      `plate_mode: ${plateMode}
+${plateMode === 'code' ? `code_plate: ${JSON.stringify(codePlate)}` : `svg: ${svgAsset}`}
+source: ${text}
+note: no Image2 master; renderer draws this plate in code or loads the static SVG.`,
+    );
+  }
+
+  if (needsRasterMaster && shouldGenerateWithApi) {
     runImage2Edit({
       images: [
         ...(visualMode === 'ink-comic' ? [] : [referenceBw, referenceColor]),
@@ -608,7 +703,7 @@ Constraints: ${visualMode === 'essay' ? 'warm personal memoir illustration, non-
     previousColor = absoluteAsset(colorName);
   }
 
-  if (generator === 'codex') {
+  if (needsRasterMaster && generator === 'codex') {
     codexJobs.push({
       id,
       role: 'scene',
@@ -625,6 +720,8 @@ Constraints: ${visualMode === 'essay' ? 'warm personal memoir illustration, non-
   const essayMotion = visualMode === 'essay'
     ? (['hold', 'push_soft', 'pull_soft'].includes(motion) ? motion : 'push_soft')
     : motion;
+  const useSimpleLayers =
+    !needsRasterMaster || visualMode === 'essay' || visualMode === 'ink-comic';
 
   scenes.push({
     id,
@@ -643,24 +740,33 @@ Constraints: ${visualMode === 'essay' ? 'warm personal memoir illustration, non-
     motion: essayMotion,
     transition_to_next: sceneTransition,
     visual_mode: visualMode,
+    plate_mode: plateMode,
+    code_plate: codePlate,
     scene_kind: sceneKind,
     glyph,
     case_label: caseLabel,
     accent,
-    layers: visualMode === 'essay'
+    layers: useSimpleLayers
       ? ['text', 'color']
-      : visualMode === 'ink-comic' ? ['text', 'color'] : ['text', 'bw_full', 'color'],
-    color_hint: visualMode === 'essay'
+      : ['text', 'bw_full', 'color'],
+    color_hint: !needsRasterMaster
+      ? (plateMode === 'code'
+          ? `code plate motif=${codePlate?.motif}`
+          : `static svg plate ${svgAsset}`)
+      : visualMode === 'essay'
       ? '柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上'
       : visualMode === 'ink-comic'
         ? `全画面黑白灰，仅用 ${accent} 强调一个关键证物或情绪焦点`
         : '仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白',
     detail_hint: null,
     assets: {
-      text_image: !['essay', 'ink-comic'].includes(visualMode) && usesImage2Text ? projectAsset(textName) : null,
-      bw: visualMode === 'essay' ? null : projectAsset(bwName),
+      text_image: needsRasterMaster && !['essay', 'ink-comic'].includes(visualMode) && usesImage2Text
+        ? projectAsset(textName)
+        : null,
+      bw: needsRasterMaster && visualMode !== 'essay' ? projectAsset(bwName) : null,
       detail: null,
-      color: projectAsset(colorName),
+      color: needsRasterMaster ? projectAsset(colorName) : null,
+      svg: plateMode === 'svg' ? svgAsset : null,
     },
   });
 }

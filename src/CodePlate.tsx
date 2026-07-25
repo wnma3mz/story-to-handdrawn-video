@@ -164,7 +164,7 @@ export const CodePlate: React.FC<Props> = ({scene, monochrome = false}) => {
       : ['#B4786E', '#7A8B7A'];
   const a1 = accents[0];
   const a2 = accents[1] || accents[0];
-  const seed = spec?.seed ?? Number.parseInt(scene.id, 10) || 1;
+  const seed = spec?.seed ?? (Number.parseInt(scene.id, 10) || 1);
   const rand = mulberry32(seed * 9973);
   const washes = Array.from({length: 5}, (_, index) => ({
     cx: 180 + rand() * 660,
