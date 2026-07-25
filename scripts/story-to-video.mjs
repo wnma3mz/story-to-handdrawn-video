@@ -571,26 +571,6 @@ Use thick casual black felt-tip handwriting, 1–3 lines only, generous 48-pixel
       : 'The character lock defines identities, not an automatic cast list. Show only characters explicitly named in the current sentence or strictly required for its immediate action. Never add family bystanders. Never show a future daughter, rescued child, grandmother, father or any other supporting character before that person is introduced by the narration. Do not carry any person, prop or setting forward merely because it appeared in another scene.';
 
   const hasContinuityReference = Boolean(previousColor) || Boolean(codexCharacterReference);
-  const masterPrompt = writePrompt(
-    `${id}_master.txt`,
-    `Use case: ${visualMode === 'essay' ? 'essay-mood' : 'historical-scene'}
-Asset type: ${assetType}.
-Input images: ${visualMode === 'ink-comic' ? 'the fixed character sheet, when supplied, controls identity only' : visualMode === 'essay' ? 'none required; the supplied style frames establish the loose watercolor/ink-wash visual language only; ignore their people, composition and text' : 'the supplied original-video frames are style references'}${!['essay'].includes(visualMode) && hasContinuityReference ? '; the fixed protagonist character sheet is the identity reference' : ''}. ${visualMode === 'essay' ? 'These are mood illustrations for a personal memoir; each image should feel like a faded memory, a half-remembered moment, not a documentary photograph.' : 'Ignore all text in references.'}
-${visualMode === 'essay' ? `Essay passage to evoke: "${text}"` : `Narrative sentence to illustrate: "${text}"`}
-${visualMode === 'essay' ? `Emotional register: ${visualDirection}` : `Scene direction: ${visualDirection}`}
-${visualMode === 'essay' ? '' : `Narrative shot type: ${shotType}`}
-${visualMode === 'essay' ? '' : `Primary focal area: ${focus}`}
-Create ${visualMode === 'essay' ? 'one atmospheric, emotionally resonant image that captures the mood and essence of the passage without illustrating it literally. Let the composition breathe. Use light, color temperature, and texture to carry the emotional weight. The text will tell the story; the image should make the viewer feel it.' : 'one concrete, immediately readable tableau for that sentence. Use the locked recurring protagonists whenever the current sentence requires them.'}
-${visualMode === 'essay' ? '' : `Character lock: ${characterLock}`}
-Style: ${styleLock}
-${captionPanel}
-${illustrationPanel}
-Composition: ${compositionRule}
-Color: ${colorRule}
-${visualMode === 'essay' ? '' : `Continuity: preserve the locked character design. Use the fixed character sheet only for the protagonist's identity, never copy its pose or composition. Include only people required by the current narrative sentence.`}
-${visualMode === 'essay' ? '' : `Narrative isolation: ${isolationRule}`}
-Constraints: ${visualMode === 'essay' ? 'warm personal memoir illustration, non-graphic; impressionistic watercolor or ink-wash style with visible brush texture; no hard outlines or cartoon linework; no photorealism, glossy 3D, anime styling, modern props or watermark; ' : `non-graphic historical suspense, no gore; period-accurate Northern Song clothing, architecture and objects; `}${textConstraint}${visualMode === 'essay' ? '' : '; no photorealism, glossy 3D, anime styling, modern props or watermark'}.`,
-  );
 
   // Non-raster plates skip Image2 entirely: code motifs render in Remotion,
   // svg plates load static public assets. Only raster scenes write prompts/jobs.
