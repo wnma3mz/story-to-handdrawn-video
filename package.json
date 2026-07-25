@@ -22,6 +22,7 @@
     "render:preview": "node scripts/render-picture.mjs --preview",
     "render:cover": "node scripts/render-picture.mjs --cover",
     "audit:motion": "python3 scripts/audit_motion_timeline.py",
+    "config:voiceover": "python3 scripts/generate_voiceover_config.py",
     "build:audio": "python3 scripts/build_story_audio.py",
     "apply:subtitles": "python3 scripts/apply_verbatim_subtitles.py",
     "audit:delivery": "python3 scripts/audit_story_delivery.py",

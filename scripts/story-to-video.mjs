@@ -7,6 +7,9 @@ import {fileURLToPath} from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
+const styles = JSON.parse(readFileSync(resolve(root, 'config/styles.json'), 'utf8'));
+const fill = (text, vars) => text.replace(/\{(\w+)\}/g, (_, key) => (vars && key in vars) ? String(vars[key]) : `{${key}}`);
+
 const parseArgs = (tokens) => {
   const parsed = {};
   for (let index = 0; index < tokens.length; index += 1) {
@@ -212,9 +215,8 @@ const durationFor = (caption) => {
   return Number(Math.min(6.2, Math.max(4.4, 3.8 + lineCount * 0.48 + characterCount * 0.035)).toFixed(1));
 };
 
-const styleLock = visualMode === 'ink-comic'
-  ? 'full-screen Northern Song monochrome motion-comic illustration, bold black ink outlines, expressive adult faces, grayscale ink-wash depth, restrained paper grain, dramatic but readable staging, selective vermilion or muted field-green color only on the active clue, no fixed white diary page, no photorealism, glossy 3D, anime styling, modern collage typography or watermark'
-  : 'minimalist Chinese diary comic reconstructed from the supplied reference video, pure white background, uneven black felt-tip pen outlines, naive wobbly proportions, rough dense black crayon scribbles for dark areas, sparse props, abundant negative space, selective muted wax-crayon color only, no realistic shading, no paper texture, no watermark';
+const style = styles[visualMode];
+const styleLock = style.styleLock;
 const characterLock = String(
   args['character-lock'] ||
     '重复出现的主角须保持同一张脸、发型、年龄、服装配色和身体比例；具体人物身份以故事原文为准；不得添加原文未提及的配角、道具或文字',
@@ -426,11 +428,12 @@ if (generator === 'codex') {
   }
   codexCharacterReference = suppliedCharacterReference || absoluteAsset('00_character_reference.png');
   if (!suppliedCharacterReference) {
+    const charRef = style.characterRef;
     const characterPrompt = writePrompt(
       '00_character_reference.txt',
-      `Use case: ${visualMode === 'ink-comic' ? 'historical-scene' : 'illustration-story'}
-Asset type: fixed recurring-character reference sheet for a ${visualMode === 'ink-comic' ? 'Northern Song monochrome motion-comic' : 'hand-drawn Chinese diary-comic'} video
-Input images: ${visualMode === 'ink-comic' ? 'none; establish the requested original visual language' : 'the supplied black-and-white and color frames are style references only; ignore their people, composition and Chinese text'}.
+      `Use case: ${charRef.useCase}
+Asset type: fixed recurring-character reference sheet for a ${charRef.assetType} video
+Input images: ${charRef.inputImagesNote}.
 Primary request: follow ONLY the episode-specific character-reference brief below. Do not add any identity mentioned only by the broader episode continuity lock.
 Character-reference brief:
 ${characterReferenceBrief}
@@ -438,7 +441,7 @@ Episode continuity lock (context only; it does not expand the reference-sheet ca
 ${characterLock}
 Style: ${styleLock}
 Composition: neutral light-gray reference sheet, all uncropped full-body poses centered with generous spacing and a clean 10% safe border. No scenery, furniture, extra people, props or decorative marks.
-Color: ${visualMode === 'ink-comic' ? 'almost entirely grayscale; reserve one muted vermilion accent for a small clothing fastener so identity remains trackable' : 'selective muted wax-crayon color only; follow the clothing colors in the character lock, use black scribbles for hair and dark trousers, and leave skin and most of the canvas white'}.
+Color: ${charRef.color}.
 Constraints: this is an identity reference only; no text, letters, numbers, labels, captions, speech bubbles, logo, signature or watermark; no photorealism, glossy 3D or anime styling.`,
     );
     codexJobs.push({
@@ -447,7 +450,7 @@ Constraints: this is an identity reference only; no text, letters, numbers, labe
       prompt_file: characterPrompt,
       prompt: readFileSync(characterPrompt, 'utf8').trim(),
       output_master: codexCharacterReference,
-      references: visualMode === 'ink-comic' ? [] : [referenceBw, referenceColor],
+      references: charRef.needsStyleRefs ? [referenceBw, referenceColor] : [],
     });
   }
 }
@@ -525,50 +528,17 @@ for (let index = 0; index < storyParts.length; index += 1) {
   }
   const needsRasterMaster = plateMode === 'raster';
   const usesImage2Text = needsRasterMaster && visualMode === 'diary' && textMode === 'image2';
+  const textVariant = usesImage2Text ? 'image2text' : 'font';
   const masterSize = visualMode === 'ink-comic'
-    ? '1536x1024'
+    ? style.masterSize.default
     : usesImage2Text ? '1024x1536' : '1024x1024';
-  const captionPanel = visualMode === 'essay'
-    ? 'Use the entire canvas only for the illustration; do not add any text. All text will be typeset separately by code.'
-    : usesImage2Text
-      ? `Top copy panel (pixels y=0–342): pure white background. Write ONLY this Simplified Chinese caption verbatim, preserving the explicit line breaks:
-"${caption}"
-Use thick casual black felt-tip handwriting, 1–3 lines only, generous 48-pixel left/right margins, and a large readable letter size. Do not put any illustration or decorative mark in this panel. Do not place text below y=342.`
-      : 'Use the entire canvas only for the illustration; do not add any text.';
-  const textConstraint = visualMode === 'essay'
-    ? 'no text, letters, numbers, labels, captions, speech bubbles, logo, signature or watermark'
-    : usesImage2Text
-      ? 'no extra text outside the exact top caption, no letters or numbers in the illustration, no labels, captions, speech bubbles, logo, signature or watermark'
-      : 'no text, letters, numbers, labels, captions, speech bubbles, logo, signature or watermark';
-  const illustrationPanel = visualMode === 'essay'
-    ? 'Use the entire square canvas for a loose atmospheric mood illustration — not a literal scene, but an impressionistic visual companion to the text.'
-    : visualMode === 'ink-comic'
-      ? 'Use the entire landscape canvas for the illustration. Do not reserve a white caption panel.'
-      : usesImage2Text
-        ? 'Illustration panel (pixels y=512–1536): use this exact lower 1024×1024 square for the scene. Leave the 342–512 transition band completely white.'
-        : 'Use the entire 1024×1024 square for the scene.';
-  const assetType = visualMode === 'essay'
-    ? 'one square mood illustration plate for a personal essay or memoir'
-    : visualMode === 'ink-comic'
-      ? 'one full-bleed 16:9 production panel for a historical monochrome motion-comic'
-      : usesImage2Text
-        ? 'one vertical production master that will be split into a handwritten caption plate and a color illustration plate'
-        : 'one square color illustration master';
-  const compositionRule = visualMode === 'essay'
-    ? 'Compose a loose, atmospheric frame that evokes the emotional tone of the passage rather than depicting it literally. Use open composition with 20–30% of the canvas as quiet negative space. The illustration is a gentle companion to the text, never competing for attention. Abstract elements (light, shadow, texture, silhouette) are welcome; exact narrative detail should yield to mood. Keep all visible marks at least 12% from every canvas edge.'
-    : visualMode === 'ink-comic'
-      ? 'Compose for a 16:9 full-screen frame. Use cinematic foreground, middle ground and background separation suitable for a restrained 2.5D push. Keep every face, hand and active clue inside the central 82% safe area and the bottom 18% free of essential detail for subtitles. Cropping secondary architecture at the frame edge is allowed; never crop the active clue.'
-      : 'Use a comfortably wide camera view. Keep the entire sparse scene in the lower-middle of its illustration square with generous white negative space. Reserve a clean white safe border of at least 10% on the left and right and 8% on the top and bottom. Every figure, limb, prop, building edge, roof, tree branch, rain stroke and motion mark must stay completely inside that safe border. Scale the scene down when necessary; never let any visible mark touch or cross a canvas edge.';
-  const colorRule = visualMode === 'essay'
-    ? 'Use a soft, muted palette: warm sepia, faded indigo, dusty rose, sage green, and parchment cream. Apply loose watercolor or ink-wash technique with visible brush texture. Colors should feel nostalgic and weathered, like a well-loved book. Avoid harsh contrasts and saturated primaries. Leave at least 25% of the canvas in soft negative space.'
-    : visualMode === 'ink-comic'
-      ? `Render 90–95% of the frame in black, charcoal and warm gray. Use ${accent} only on the single active clue or emotional focal object; do not color whole costumes or backgrounds.`
-      : 'Use selective muted wax-crayon color only: sage green, dusty blue, warm tan, brick red and warm yellow. Keep hair, trousers and other dark areas as black scribbles. Leave skin and most of the canvas pure white.';
-  const isolationRule = visualMode === 'essay'
-    ? 'The illustration is a mood piece, not a literal scene. Evoke the emotional atmosphere with light, color, and texture. If a figure is required, show it as a partial silhouette or distant presence rather than a detailed portrait. Never depict exact narrative action step by step; the text carries the story, the image carries the feeling.'
-    : visualMode === 'ink-comic'
-      ? 'Show only characters and objects required by this beat. Large background calligraphy, subtitles, labels and exact title text will be added in code; generate none inside the illustration.'
-      : 'The character lock defines identities, not an automatic cast list. Show only characters explicitly named in the current sentence or strictly required for its immediate action. Never add family bystanders. Never show a future daughter, rescued child, grandmother, father or any other supporting character before that person is introduced by the narration. Do not carry any person, prop or setting forward merely because it appeared in another scene.';
+  const captionPanel = fill(style.captionPanel[textVariant] || style.captionPanel.font, {caption});
+  const textConstraint = style.textConstraint[textVariant] || style.textConstraint.font;
+  const illustrationPanel = style.illustrationPanel[textVariant] || style.illustrationPanel.font;
+  const assetType = style.assetType[textVariant] || style.assetType.font;
+  const compositionRule = style.compositionRule;
+  const colorRule = fill(style.colorRule, {accent});
+  const isolationRule = style.isolationRule;
 
   const hasContinuityReference = Boolean(previousColor) || Boolean(codexCharacterReference);
 
@@ -576,26 +546,48 @@ Use thick casual black felt-tip handwriting, 1–3 lines only, generous 48-pixel
   // svg plates load static public assets. Only raster scenes write prompts/jobs.
   let masterPrompt = null;
   if (needsRasterMaster) {
-    masterPrompt = writePrompt(
-      `${id}_master.txt`,
-      `Use case: ${visualMode === 'essay' ? 'essay-mood' : 'historical-scene'}
-Asset type: ${assetType}.
-Input images: ${visualMode === 'ink-comic' ? 'the fixed character sheet, when supplied, controls identity only' : visualMode === 'essay' ? 'none required; the supplied style frames establish the loose watercolor/ink-wash visual language only; ignore their people, composition and text' : 'the supplied original-video frames are style references'}${!['essay'].includes(visualMode) && hasContinuityReference ? '; the fixed protagonist character sheet is the identity reference' : ''}. ${visualMode === 'essay' ? 'These are mood illustrations for a personal memoir; each image should feel like a faded memory, a half-remembered moment, not a documentary photograph.' : 'Ignore all text in references.'}
-${visualMode === 'essay' ? `Essay passage to evoke: "${text}"` : `Narrative sentence to illustrate: "${text}"`}
-${visualMode === 'essay' ? `Emotional register: ${visualDirection}` : `Scene direction: ${visualDirection}`}
-${visualMode === 'essay' ? '' : `Narrative shot type: ${shotType}`}
-${visualMode === 'essay' ? '' : `Primary focal area: ${focus}`}
-Create ${visualMode === 'essay' ? 'one atmospheric, emotionally resonant image that captures the mood and essence of the passage without illustrating it literally. Let the composition breathe. Use light, color temperature, and texture to carry the emotional weight. The text will tell the story; the image should make the viewer feel it.' : 'one concrete, immediately readable tableau for that sentence. Use the locked recurring protagonists whenever the current sentence requires them.'}
-${visualMode === 'essay' ? '' : `Character lock: ${characterLock}`}
-Style: ${styleLock}
-${captionPanel}
-${illustrationPanel}
-Composition: ${compositionRule}
-Color: ${colorRule}
-${visualMode === 'essay' ? '' : `Continuity: preserve the locked character design. Use the fixed character sheet only for the protagonist's identity, never copy its pose or composition. Include only people required by the current narrative sentence.`}
-${visualMode === 'essay' ? '' : `Narrative isolation: ${isolationRule}`}
-Constraints: ${visualMode === 'essay' ? 'warm personal memoir illustration, non-graphic; impressionistic watercolor or ink-wash style with visible brush texture; no hard outlines or cartoon linework; no photorealism, glossy 3D, anime styling, modern props or watermark; ' : `non-graphic historical suspense, no gore; period-accurate Northern Song clothing, architecture and objects; `}${textConstraint}${visualMode === 'essay' ? '' : '; no photorealism, glossy 3D, anime styling, modern props or watermark'}.`,
+    const sp = style.scenePrompt;
+    const isEssay = visualMode === 'essay';
+    const inputImagesLine = [
+      `Input images: ${sp.inputImagesNote}`,
+      !isEssay && hasContinuityReference ? '; the fixed protagonist character sheet is the identity reference' : '',
+      '. ',
+      isEssay ? 'These are mood illustrations for a personal memoir; each image should feel like a faded memory, a half-remembered moment, not a documentary photograph.' : 'Ignore all text in references.',
+    ].join('');
+
+    const lines = [
+      `Use case: ${sp.useCase}`,
+      `Asset type: ${assetType}.`,
+      inputImagesLine,
+      isEssay ? `Essay passage to evoke: "${text}"` : `Narrative sentence to illustrate: "${text}"`,
+    ];
+    if (isEssay) {
+      lines.push(`Emotional register: ${visualDirection}`);
+    } else {
+      lines.push(`Scene direction: ${visualDirection}`);
+      lines.push(`Narrative shot type: ${shotType}`);
+      lines.push(`Primary focal area: ${focus}`);
+    }
+    lines.push(`Create ${sp.createLine}`);
+    if (!isEssay) {
+      lines.push(`Character lock: ${characterLock}`);
+    }
+    lines.push(
+      `Style: ${styleLock}`,
+      captionPanel,
+      illustrationPanel,
+      `Composition: ${compositionRule}`,
+      `Color: ${colorRule}`,
     );
+    if (!isEssay) {
+      lines.push(
+        `Continuity: preserve the locked character design. Use the fixed character sheet only for the protagonist's identity, never copy its pose or composition. Include only people required by the current narrative sentence.`,
+        `Narrative isolation: ${isolationRule}`,
+      );
+    }
+    lines.push(`Constraints: ${sp.constraintsPrefix}${textConstraint}${sp.constraintsSuffix}.`);
+
+    masterPrompt = writePrompt(`${id}_master.txt`, lines.join('\n'));
   } else {
     writePrompt(
       `${id}_plate.txt`,

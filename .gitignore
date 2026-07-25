@@ -8,6 +8,7 @@ public/assets/generated/
 prompts/generated/
 codex-image-jobs.json
 storyboard.generated.json
+voiceover.generated.json
 uploaded-pages.json
 .env
 .env.*
