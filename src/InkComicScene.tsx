@@ -1,12 +1,12 @@
 import {
   AbsoluteFill,
-  Img,
   interpolate,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion';
 import {MotionStage} from './MotionStage';
+import {resolvePlateMode, sceneHasIllustrationPlate} from './plateMode';
+import {ScenePlate} from './ScenePlate';
 import type {SceneData} from './types';
 
 const safeAccent = (scene: SceneData) => scene.accent || '#A93B32';
@@ -38,7 +38,8 @@ export const InkComicScene: React.FC<{scene: SceneData}> = ({scene}) => {
   // appear on the first frame of the machine scene that starts the TTS cue.
   const captionIn = 1;
   const accent = safeAccent(scene);
-  const plate = scene.assets.color || scene.assets.bw;
+  const hasPlate = sceneHasIllustrationPlate(scene);
+  const plateMode = resolvePlateMode(scene);
   const subtitleLength = [...scene.text.replace(/\s/g, '')].length;
   const subtitleFontSize = subtitleLength > 60 ? 32 : subtitleLength > 46 ? 35 : subtitleLength > 32 ? 38 : 42;
 
@@ -69,19 +70,22 @@ export const InkComicScene: React.FC<{scene: SceneData}> = ({scene}) => {
         </div>
       ) : null}
 
-      {plate ? (
+      {hasPlate ? (
         <MotionStage scene={scene}>
-          <Img
-            src={staticFile(plate)}
+          <div
             style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center center',
-              filter: sceneTreatment(scene.scene_kind),
+              position: 'absolute',
+              inset: 0,
+              filter: plateMode === 'raster' ? sceneTreatment(scene.scene_kind) : undefined,
               opacity: fadeIn,
             }}
-          />
+          >
+            <ScenePlate
+              scene={scene}
+              monochrome
+              objectFit={plateMode === 'raster' ? 'cover' : 'contain'}
+            />
+          </div>
         </MotionStage>
       ) : null}
 

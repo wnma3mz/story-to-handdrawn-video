@@ -24,6 +24,45 @@ const allowedMotions = new Set([
   'pan_down',
 ]);
 
+const allowedPlateModes = new Set(['raster', 'svg', 'code']);
+const codePlateMotifs = new Set([
+  'window',
+  'desk_night',
+  'bike',
+  'street',
+  'two_figures',
+  'temple_gate',
+  'empty_cup',
+  'ghost_window',
+  'detour',
+  'farewell',
+  'abstract_wash',
+  'book_lamp',
+]);
+
+const resolvePlateMode = (scene) => {
+  if (allowedPlateModes.has(scene?.plate_mode)) return scene.plate_mode;
+  if (scene?.code_plate && typeof scene.code_plate === 'object') return 'code';
+  if (scene?.assets?.svg) return 'svg';
+  return 'raster';
+};
+
+const plateIdentityKey = (scene) => {
+  const mode = resolvePlateMode(scene);
+  if (mode === 'code') {
+    const plate = scene.code_plate || {};
+    return `code:${JSON.stringify({
+      motif: plate.motif || null,
+      background: plate.background || null,
+      ink: plate.ink || null,
+      accents: plate.accents || null,
+      seed: plate.seed ?? null,
+    })}`;
+  }
+  if (mode === 'svg') return `svg:${scene.assets?.svg || ''}`;
+  return `raster:${scene.assets?.color || ''}`;
+};
+
 const pngDimensions = (path) => {
   if (!path.toLowerCase().endsWith('.png')) return null;
   const bytes = readFileSync(path);
@@ -56,8 +95,8 @@ const validate = (file) => {
   if (Math.abs(project.width / project.height - expectedRatio) > 0.001) {
     errors.push(`project width/height must be ${project.ratio}`);
   }
-  if (!['diary', 'ink-comic', undefined].includes(project.visual_mode)) {
-    errors.push('project.visual_mode must be diary or ink-comic');
+  if (!['diary', 'ink-comic', 'essay', undefined].includes(project.visual_mode)) {
+    errors.push('project.visual_mode must be diary, ink-comic, or essay');
   }
   if (!['draft_summary', 'verbatim_tts', undefined].includes(project.subtitle_contract)) {
     errors.push('project.subtitle_contract must be draft_summary or verbatim_tts');
@@ -124,17 +163,52 @@ const validate = (file) => {
     const hasText = scene.layers.includes('text');
     const illustrated = scene.layers.includes('bw_full');
     const colorIndex = scene.layers.indexOf('color');
+    const plateMode = resolvePlateMode(scene);
+    if (scene.plate_mode && !allowedPlateModes.has(scene.plate_mode)) {
+      errors.push(`${label}: plate_mode must be raster, svg, or code`);
+    }
     if ((scene.text || scene.assets.text_image) && !hasText) {
       errors.push(`${label}: text content requires a text layer`);
     }
-    if (illustrated && (!scene.assets.bw || !scene.assets.color)) {
-      errors.push(`${label}: illustrated scenes require bw and color assets`);
+    if (colorIndex < 0) {
+      errors.push(`${label}: a color layer is required (illustration plate slot)`);
     }
-    if (illustrated && scene.layers.indexOf('bw_full') > colorIndex) {
-      errors.push(`${label}: bw_full must appear before color`);
-    }
-    if (!scene.assets.color || colorIndex < 0) {
-      errors.push(`${label}: a color layer and asset are required`);
+    if (plateMode === 'raster') {
+      if (illustrated && (!scene.assets.bw || !scene.assets.color)) {
+        errors.push(`${label}: illustrated scenes require bw and color assets`);
+      }
+      if (illustrated && scene.layers.indexOf('bw_full') > colorIndex) {
+        errors.push(`${label}: bw_full must appear before color`);
+      }
+      if (!scene.assets.color) {
+        errors.push(`${label}: raster plates require a color asset`);
+      }
+    } else if (plateMode === 'svg') {
+      if (!scene.assets.svg) {
+        errors.push(`${label}: svg plates require assets.svg`);
+      }
+      if (illustrated) {
+        errors.push(`${label}: svg plates cannot use bw_full reveal layers`);
+      }
+      if (scene.assets.color || scene.assets.bw) {
+        errors.push(`${label}: svg plates must leave bw/color raster assets null`);
+      }
+    } else if (plateMode === 'code') {
+      const motif = scene.code_plate?.motif;
+      if (!motif || typeof motif !== 'string') {
+        errors.push(`${label}: code plates require code_plate.motif`);
+      } else if (!codePlateMotifs.has(motif)) {
+        errors.push(
+          `${label}: unknown code_plate.motif ${JSON.stringify(motif)}; ` +
+            `expected one of ${[...codePlateMotifs].join(', ')}`,
+        );
+      }
+      if (illustrated) {
+        errors.push(`${label}: code plates cannot use bw_full reveal layers`);
+      }
+      if (scene.assets.color || scene.assets.bw || scene.assets.svg) {
+        errors.push(`${label}: code plates must leave raster/svg asset paths null`);
+      }
     }
     if (project.visual_mode === 'ink-comic') {
       if (scene.visual_mode !== 'ink-comic') {
@@ -161,6 +235,9 @@ const validate = (file) => {
           errors.push(`${label}: missing ${key} asset at public/${path}`);
         }
         continue;
+      }
+      if (key === 'svg' && !path.toLowerCase().endsWith('.svg')) {
+        errors.push(`${label}: svg asset must end with .svg`);
       }
       const dimensions = pngDimensions(absolute);
       if (
@@ -204,7 +281,7 @@ const validate = (file) => {
       (scene) => String(scene.visual_interval_id || scene.id) === interval,
     );
     const first = scenes[0];
-    const asset = first.assets?.color;
+    const plateKey = plateIdentityKey(first);
     const motion = first.motion || 'hold';
     const focus = first.focus || 'center';
     if (first.visual_interval_start === false) {
@@ -212,8 +289,12 @@ const validate = (file) => {
     }
     for (let index = 0; index < scenes.length; index += 1) {
       const scene = scenes[index];
-      if (scene.assets?.color !== asset || (scene.motion || 'hold') !== motion || (scene.focus || 'center') !== focus) {
-        errors.push(`${scene.id}: asset, motion, and focus must stay fixed inside visual interval ${JSON.stringify(interval)}`);
+      if (
+        plateIdentityKey(scene) !== plateKey ||
+        (scene.motion || 'hold') !== motion ||
+        (scene.focus || 'center') !== focus
+      ) {
+        errors.push(`${scene.id}: plate, motion, and focus must stay fixed inside visual interval ${JSON.stringify(interval)}`);
       }
       if (index > 0 && scene.visual_interval_start !== false) {
         errors.push(`${scene.id}: repeated machine scene must not restart visual interval ${JSON.stringify(interval)}`);

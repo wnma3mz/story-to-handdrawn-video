@@ -1,0 +1,400 @@
+{
+  "project": {
+    "title": "合肥尖沙咀",
+    "mode": "speed",
+    "images_per_scene": 1,
+    "derive_bw": "local",
+    "enable_detail": false,
+    "gen_size": 1024,
+    "visual_mode": "essay",
+    "export_size": [
+      1080,
+      1440
+    ],
+    "ratio": "3:4",
+    "width": 1080,
+    "height": 1440,
+    "fps": 30,
+    "transition": "cut",
+    "transition_sec": 0.7,
+    "style_lock": "minimalist Chinese diary comic reconstructed from the supplied reference video, pure white background, uneven black felt-tip pen outlines, naive wobbly proportions, rough dense black crayon scribbles for dark areas, sparse props, abundant negative space, selective muted wax-crayon color only, no realistic shading, no paper texture, no watermark",
+    "character_lock": "重复出现的主角须保持同一张脸、发型、年龄、服装配色和身体比例；具体人物身份以故事原文为准；不得添加原文未提及的配角、道具或文字",
+    "cover": {
+      "series_title": "龙与少年游 · 文学随笔",
+      "episode_label": "少年篇",
+      "episode_number": "01",
+      "background": "#5C4A3A"
+    },
+    "audio": {
+      "voiceover": "continuous_groups",
+      "bgm": "optional_bed_only",
+      "bgm_follows_text": false
+    }
+  },
+  "scenes": [
+    {
+      "id": "01",
+      "duration_sec": 13.640000000000002,
+      "text": "我很喜欢王家卫的《东邪西毒\n》，那部电影里有我看过的最\n美的张曼玉。",
+      "narration": "我很喜欢王家卫的《东邪西毒》，那部电影里有我看过的最美的张曼玉。",
+      "visual": "Stage one simple visual beat that expresses only the current sentence.",
+      "shot": "story_beat",
+      "focus": "center",
+      "motion": "hold",
+      "transition_to_next": "cut",
+      "visual_mode": "essay",
+      "scene_kind": "narrative",
+      "glyph": null,
+      "case_label": null,
+      "accent": "#A93B32",
+      "layers": [
+        "text",
+        "color"
+      ],
+      "color_hint": "柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上",
+      "detail_hint": null,
+      "assets": {
+        "text_image": null,
+        "bw": null,
+        "detail": null,
+        "color": "assets/generated/codex/long-yu-shaonian-you-hefei-pilot/01_color.png"
+      }
+    },
+    {
+      "id": "02",
+      "duration_sec": 11.66,
+      "text": "很多年后我当了作家富豪榜的\n榜首。",
+      "narration": "很多年后我当了作家富豪榜的榜首。",
+      "visual": "Stage one simple visual beat that expresses only the current sentence.",
+      "shot": "story_beat",
+      "focus": "center",
+      "motion": "hold",
+      "transition_to_next": "cut",
+      "visual_mode": "essay",
+      "scene_kind": "narrative",
+      "glyph": null,
+      "case_label": null,
+      "accent": "#A93B32",
+      "layers": [
+        "text",
+        "color"
+      ],
+      "color_hint": "柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上",
+      "detail_hint": null,
+      "assets": {
+        "text_image": null,
+        "bw": null,
+        "detail": null,
+        "color": "assets/generated/codex/long-yu-shaonian-you-hefei-pilot/02_color.png"
+      }
+    },
+    {
+      "id": "03",
+      "duration_sec": 13.640000000000002,
+      "text": "但我一生中最好的时候是在合\n肥度过的，那时我的梦想是当\n一个古惑仔。",
+      "narration": "但我一生中最好的时候是在合肥度过的，那时我的梦想是当一个古惑仔。",
+      "visual": "Stage one simple visual beat that expresses only the current sentence.",
+      "shot": "story_beat",
+      "focus": "center",
+      "motion": "hold",
+      "transition_to_next": "cut",
+      "visual_mode": "essay",
+      "scene_kind": "narrative",
+      "glyph": null,
+      "case_label": null,
+      "accent": "#A93B32",
+      "layers": [
+        "text",
+        "color"
+      ],
+      "color_hint": "柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上",
+      "detail_hint": null,
+      "assets": {
+        "text_image": null,
+        "bw": null,
+        "detail": null,
+        "color": "assets/generated/codex/long-yu-shaonian-you-hefei-pilot/03_color.png"
+      }
+    },
+    {
+      "id": "04",
+      "duration_sec": 12.32,
+      "text": "小时候我是一个沉闷的小孩，\n我爹一直叫我“书呆子”。",
+      "narration": "小时候我是一个沉闷的小孩，我爹一直叫我“书呆子”。",
+      "visual": "Stage one simple visual beat that expresses only the current sentence.",
+      "shot": "story_beat",
+      "focus": "center",
+      "motion": "hold",
+      "transition_to_next": "cut",
+      "visual_mode": "essay",
+      "scene_kind": "narrative",
+      "glyph": null,
+      "case_label": null,
+      "accent": "#A93B32",
+      "layers": [
+        "text",
+        "color"
+      ],
+      "color_hint": "柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上",
+      "detail_hint": null,
+      "assets": {
+        "text_image": null,
+        "bw": null,
+        "detail": null,
+        "color": "assets/generated/codex/long-yu-shaonian-you-hefei-pilot/04_color.png"
+      }
+    },
+    {
+      "id": "05",
+      "duration_sec": 13.640000000000002,
+      "text": "夜深人静的时候老爹把书呆子\n放在窗前的书桌上自习，\n自己看电视去了。",
+      "narration": "夜深人静的时候老爹把书呆子放在窗前的书桌上自习，自己看电视去了。",
+      "visual": "Stage one simple visual beat that expresses only the current sentence.",
+      "shot": "story_beat",
+      "focus": "center",
+      "motion": "hold",
+      "transition_to_next": "cut",
+      "visual_mode": "essay",
+      "scene_kind": "narrative",
+      "glyph": null,
+      "case_label": null,
+      "accent": "#A93B32",
+      "layers": [
+        "text",
+        "color"
+      ],
+      "color_hint": "柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上",
+      "detail_hint": null,
+      "assets": {
+        "text_image": null,
+        "bw": null,
+        "detail": null,
+        "color": "assets/generated/codex/long-yu-shaonian-you-hefei-pilot/05_color.png"
+      }
+    },
+    {
+      "id": "06",
+      "duration_sec": 12.100000000000001,
+      "text": "但我爹的“书呆子”只会思考\n关于妖魔鬼怪的事。",
+      "narration": "但我爹的“书呆子”只会思考关于妖魔鬼怪的事。",
+      "visual": "Stage one simple visual beat that expresses only the current sentence.",
+      "shot": "story_beat",
+      "focus": "center",
+      "motion": "hold",
+      "transition_to_next": "cut",
+      "visual_mode": "essay",
+      "scene_kind": "narrative",
+      "glyph": null,
+      "case_label": null,
+      "accent": "#A93B32",
+      "layers": [
+        "text",
+        "color"
+      ],
+      "color_hint": "柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上",
+      "detail_hint": null,
+      "assets": {
+        "text_image": null,
+        "bw": null,
+        "detail": null,
+        "color": "assets/generated/codex/long-yu-shaonian-you-hefei-pilot/06_color.png"
+      }
+    },
+    {
+      "id": "07",
+      "duration_sec": 12.100000000000001,
+      "text": "我内心里非常嚮往去当一个班\n长那样的古惑仔。",
+      "narration": "我内心里非常嚮往去当一个班长那样的古惑仔。",
+      "visual": "Stage one simple visual beat that expresses only the current sentence.",
+      "shot": "story_beat",
+      "focus": "center",
+      "motion": "hold",
+      "transition_to_next": "cut",
+      "visual_mode": "essay",
+      "scene_kind": "narrative",
+      "glyph": null,
+      "case_label": null,
+      "accent": "#A93B32",
+      "layers": [
+        "text",
+        "color"
+      ],
+      "color_hint": "柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上",
+      "detail_hint": null,
+      "assets": {
+        "text_image": null,
+        "bw": null,
+        "detail": null,
+        "color": "assets/generated/codex/long-yu-shaonian-you-hefei-pilot/07_color.png"
+      }
+    },
+    {
+      "id": "08",
+      "duration_sec": 11.880000000000003,
+      "text": "但家里对我的要求是看到打架\n要绕着走。",
+      "narration": "但家里对我的要求是看到打架要绕着走。",
+      "visual": "Stage one simple visual beat that expresses only the current sentence.",
+      "shot": "story_beat",
+      "focus": "center",
+      "motion": "hold",
+      "transition_to_next": "cut",
+      "visual_mode": "essay",
+      "scene_kind": "narrative",
+      "glyph": null,
+      "case_label": null,
+      "accent": "#A93B32",
+      "layers": [
+        "text",
+        "color"
+      ],
+      "color_hint": "柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上",
+      "detail_hint": null,
+      "assets": {
+        "text_image": null,
+        "bw": null,
+        "detail": null,
+        "color": "assets/generated/codex/long-yu-shaonian-you-hefei-pilot/08_color.png"
+      }
+    },
+    {
+      "id": "09",
+      "duration_sec": 10.340000000000002,
+      "text": "高中时我去了合肥的尖沙咀。",
+      "narration": "高中时我去了合肥的尖沙咀。",
+      "visual": "Stage one simple visual beat that expresses only the current sentence.",
+      "shot": "story_beat",
+      "focus": "center",
+      "motion": "hold",
+      "transition_to_next": "cut",
+      "visual_mode": "essay",
+      "scene_kind": "narrative",
+      "glyph": null,
+      "case_label": null,
+      "accent": "#A93B32",
+      "layers": [
+        "text",
+        "color"
+      ],
+      "color_hint": "柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上",
+      "detail_hint": null,
+      "assets": {
+        "text_image": null,
+        "bw": null,
+        "detail": null,
+        "color": "assets/generated/codex/long-yu-shaonian-you-hefei-pilot/09_color.png"
+      }
+    },
+    {
+      "id": "10",
+      "duration_sec": 12.100000000000001,
+      "text": "我的母校是合肥八中，\n合肥八中就在城隍庙对面。",
+      "narration": "我的母校是合肥八中，合肥八中就在城隍庙对面。",
+      "visual": "Stage one simple visual beat that expresses only the current sentence.",
+      "shot": "story_beat",
+      "focus": "center",
+      "motion": "hold",
+      "transition_to_next": "cut",
+      "visual_mode": "essay",
+      "scene_kind": "narrative",
+      "glyph": null,
+      "case_label": null,
+      "accent": "#A93B32",
+      "layers": [
+        "text",
+        "color"
+      ],
+      "color_hint": "柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上",
+      "detail_hint": null,
+      "assets": {
+        "text_image": null,
+        "bw": null,
+        "detail": null,
+        "color": "assets/generated/codex/long-yu-shaonian-you-hefei-pilot/10_color.png"
+      }
+    },
+    {
+      "id": "11",
+      "duration_sec": 12.100000000000001,
+      "text": "想要混得好就得有几个好兄弟，\n我的好兄弟姓唐。",
+      "narration": "想要混得好就得有几个好兄弟，我的好兄弟姓唐。",
+      "visual": "Stage one simple visual beat that expresses only the current sentence.",
+      "shot": "story_beat",
+      "focus": "center",
+      "motion": "hold",
+      "transition_to_next": "cut",
+      "visual_mode": "essay",
+      "scene_kind": "narrative",
+      "glyph": null,
+      "case_label": null,
+      "accent": "#A93B32",
+      "layers": [
+        "text",
+        "color"
+      ],
+      "color_hint": "柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上",
+      "detail_hint": null,
+      "assets": {
+        "text_image": null,
+        "bw": null,
+        "detail": null,
+        "color": "assets/generated/codex/long-yu-shaonian-you-hefei-pilot/11_color.png"
+      }
+    },
+    {
+      "id": "12",
+      "duration_sec": 12.32,
+      "text": "我们给自己的组织起了个响亮\n的名字，叫“神行太保”。",
+      "narration": "我们给自己的组织起了个响亮的名字，叫“神行太保”。",
+      "visual": "Stage one simple visual beat that expresses only the current sentence.",
+      "shot": "story_beat",
+      "focus": "center",
+      "motion": "hold",
+      "transition_to_next": "cut",
+      "visual_mode": "essay",
+      "scene_kind": "narrative",
+      "glyph": null,
+      "case_label": null,
+      "accent": "#A93B32",
+      "layers": [
+        "text",
+        "color"
+      ],
+      "color_hint": "柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上",
+      "detail_hint": null,
+      "assets": {
+        "text_image": null,
+        "bw": null,
+        "detail": null,
+        "color": "assets/generated/codex/long-yu-shaonian-you-hefei-pilot/12_color.png"
+      }
+    },
+    {
+      "id": "13",
+      "duration_sec": 13.200000000000001,
+      "text": "别了，我的尖沙咀，\n我那么嚮往着你，\n却从未到达。",
+      "narration": "别了，我的尖沙咀，我那么嚮往着你，却从未到达。",
+      "visual": "Stage one simple visual beat that expresses only the current sentence.",
+      "shot": "story_beat",
+      "focus": "center",
+      "motion": "hold",
+      "transition_to_next": "cut",
+      "visual_mode": "essay",
+      "scene_kind": "narrative",
+      "glyph": null,
+      "case_label": null,
+      "accent": "#A93B32",
+      "layers": [
+        "text",
+        "color"
+      ],
+      "color_hint": "柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上",
+      "detail_hint": null,
+      "assets": {
+        "text_image": null,
+        "bw": null,
+        "detail": null,
+        "color": "assets/generated/codex/long-yu-shaonian-you-hefei-pilot/13_color.png"
+      }
+    }
+  ]
+}

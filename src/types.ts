@@ -2,6 +2,24 @@ export type LayerId = 'text' | 'bw_full' | 'detail' | 'color';
 
 export type VisualMode = 'diary' | 'ink-comic' | 'essay';
 
+/**
+ * How the illustration plate is produced for a scene.
+ * - raster: PNG masters from Image2 / upload (default, existing pipeline)
+ * - svg: static SVG under public/, no image generation
+ * - code: Remotion-drawn motif plate, no image generation
+ */
+export type PlateMode = 'raster' | 'svg' | 'code';
+
+export type CodePlateSpec = {
+  /** Registered motif key rendered by CodePlate. */
+  motif: string;
+  background?: string;
+  ink?: string;
+  accents?: string[];
+  /** Deterministic variation seed for wash placement. */
+  seed?: number;
+};
+
 export type SceneData = {
   id: string;
   duration_sec: number;
@@ -34,6 +52,13 @@ export type SceneData = {
   visual_interval_progress_start?: number;
   visual_interval_progress_end?: number;
   visual_mode?: VisualMode;
+  /**
+   * Illustration plate source. Defaults to raster when assets.color is set,
+   * svg when assets.svg is set, code when code_plate is set.
+   */
+  plate_mode?: PlateMode;
+  /** Procedural SVG motif plate when plate_mode is code. */
+  code_plate?: CodePlateSpec | null;
   scene_kind?: 'host' | 'narrative' | 'evidence' | 'map' | 'title' | string;
   glyph?: string | null;
   case_label?: string | null;
@@ -50,6 +75,8 @@ export type SceneData = {
     bw: string | null;
     detail: string | null;
     color: string | null;
+    /** Public-relative SVG path used when plate_mode is svg. */
+    svg?: string | null;
   };
 };
 

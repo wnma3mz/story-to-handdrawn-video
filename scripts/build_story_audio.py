@@ -367,7 +367,7 @@ def main() -> int:
         "ffmpeg", "-y", "-v", "error", "-loop", "1", "-framerate", str(fps),
         "-i", str(args.cover), "-i", str(args.picture), "-i", str(title_trimmed), "-i", str(master),
         "-filter_complex", filter_complex, "-map", "[v]", "-map", "[a]",
-        "-c:v", "libx264", "-crf", "18", "-preset", "medium", "-pix_fmt", "yuv420p",
+        "-c:v", "libx264", "-crf", "18", "-preset", "fast", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
         "-movflags", "+faststart", str(release),
     ])

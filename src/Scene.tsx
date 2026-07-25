@@ -8,6 +8,8 @@ import {
 import {LayerWipe} from './LayerWipe';
 import {InkComicScene} from './InkComicScene';
 import {MotionStage} from './MotionStage';
+import {isNonRasterPlate} from './plateMode';
+import {ScenePlate} from './ScenePlate';
 import {TextWipe} from './TextWipe';
 import type {SceneData} from './types';
 
@@ -21,38 +23,27 @@ export const Scene: React.FC<{scene: SceneData}> = ({scene}) => {
   const staticColor = has('color') && !has('bw_full') && !has('detail');
   const fullUploadedPage =
     scene.shot === 'full_uploaded_page' && scene.assets.color;
+  const nonRaster = isNonRasterPlate(scene);
 
   if (scene.visual_mode === 'ink-comic') {
     return <InkComicScene scene={scene} />;
   }
 
   if (scene.visual_mode === 'essay') {
-    const colorAsset = scene.assets.color;
     const colorFadeIn = Math.round(total * 0.18);
-    const colorOpacity = Math.min(1, colorAsset ? Math.max(0, frame / Math.max(1, colorFadeIn)) : 0);
+    const colorOpacity = Math.min(1, Math.max(0, frame / Math.max(1, colorFadeIn)));
     return (
       <AbsoluteFill style={{backgroundColor: '#FCFAF5', overflow: 'hidden'}}>
         <MotionStage scene={scene}>
-          {colorAsset ? (
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                opacity: colorOpacity,
-              }}
-            >
-              <Img
-                src={staticFile(colorAsset)}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  objectPosition: 'center center',
-                  filter: 'contrast(0.95) saturate(0.82)',
-                }}
-              />
-            </div>
-          ) : null}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              opacity: colorOpacity,
+            }}
+          >
+            <ScenePlate scene={scene} objectFit="contain" />
+          </div>
         </MotionStage>
 
         <TextWipe
@@ -76,6 +67,27 @@ export const Scene: React.FC<{scene: SceneData}> = ({scene}) => {
             objectFit: 'contain',
             objectPosition: 'center center',
           }}
+        />
+      </AbsoluteFill>
+    );
+  }
+
+  // Diary (and any non-essay) scenes with code/svg plates skip the bw→color reveal.
+  if (nonRaster) {
+    const fadeIn = Math.round(total * 0.12);
+    const opacity = Math.min(1, Math.max(0, frame / Math.max(1, fadeIn)));
+    return (
+      <AbsoluteFill style={{backgroundColor: '#FFFFFF', overflow: 'hidden'}}>
+        <MotionStage scene={scene}>
+          <div style={{position: 'absolute', inset: 0, opacity}}>
+            <ScenePlate scene={scene} objectFit="contain" />
+          </div>
+        </MotionStage>
+        <TextWipe
+          text={scene.text}
+          textAsset={scene.assets.text_image}
+          startFrame={0}
+          durationFrames={at(speedMode ? 0.22 : 0.16)}
         />
       </AbsoluteFill>
     );
