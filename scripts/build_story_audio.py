@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 
@@ -99,6 +100,28 @@ def synthesize(text: str, media: Path, subtitles: Path, profile: dict) -> None:
     ], attempts=3)
 
 
+def tts_cache_key(text: str, profile: dict) -> str:
+    payload = json.dumps(
+        {"text": text, "profile": profile},
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def synthesize_cached(
+    text: str,
+    media: Path,
+    subtitles: Path,
+    profile: dict,
+    cache_key_path: Path,
+    expected_key: str,
+) -> None:
+    synthesize(text, media, subtitles, profile)
+    cache_key_path.write_text(f"{expected_key}\n", encoding="utf-8")
+
+
 def loudnorm_filter(path: Path, mastering: dict) -> str:
     target_i = float(mastering.get("integrated_lufs", -16.0))
     target_tp = float(mastering.get("true_peak_dbtp", -1.5))
@@ -128,8 +151,16 @@ def main() -> int:
     parser.add_argument("--cover", type=Path)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path)
+    parser.add_argument(
+        "--tts-concurrency",
+        type=int,
+        default=int(os.environ.get("TTS_JOBS", "4")),
+        help="Parallel connected-group TTS requests (default: 4)",
+    )
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
+    if not 1 <= args.tts_concurrency <= 16:
+        parser.error("--tts-concurrency must stay within 1..16")
 
     episode = args.episode
     picture = args.picture or Path(f"out/{episode}/silent.mp4")
@@ -152,6 +183,84 @@ def main() -> int:
     continuity = config["continuity"]
     if not continuity.get("groups"):
         raise ValueError("continuity.groups must contain at least one narration group")
+
+    cover_cfg = config.get("cover") or config.get("release", {})
+    cover_voice = cover_cfg.get("cover_voice", {})
+    cover_duration = float(
+        cover_cfg.get("duration_sec", cover_cfg.get("cover_duration_sec", 2.7))
+    )
+    title_text = str(
+        cover_cfg.get("title_audio_text")
+        or cover_voice.get("text")
+        or storyboard["project"]["title"]
+    )
+    title_profile = {
+        **profile,
+        **{
+            key: cover_voice[key]
+            for key in ("rate", "pitch", "volume")
+            if key in cover_voice
+        },
+    }
+    title_head = float(
+        cover_voice.get("head_sec", cover_cfg.get("title_head_sec", 0.12))
+    )
+    title_raw = work_dir / "cover-title.mp3"
+    title_vtt = work_dir / "cover-title.vtt"
+    title_base = work_dir / "cover-title-base.wav"
+    title_trimmed = work_dir / "cover-title.wav"
+
+    tts_requests: list[tuple[str, Path, Path, dict, Path, str]] = []
+    for group in continuity["groups"]:
+        group_id = str(group["id"])
+        raw = raw_dir / f"{group_id}.mp3"
+        vtt = raw_dir / f"{group_id}.vtt"
+        cache_key_path = raw_dir / f"{group_id}.sha256"
+        expected_key = tts_cache_key(group["speech_text"], profile)
+        cached_key = (
+            cache_key_path.read_text(encoding="utf-8").strip()
+            if cache_key_path.exists()
+            else ""
+        )
+        if (
+            args.force
+            or not raw.exists()
+            or not vtt.exists()
+            or cached_key != expected_key
+        ):
+            tts_requests.append(
+                (
+                    group["speech_text"],
+                    raw,
+                    vtt,
+                    profile,
+                    cache_key_path,
+                    expected_key,
+                )
+            )
+    title_cache_key_path = work_dir / "cover-title.sha256"
+    expected_title_key = tts_cache_key(title_text, title_profile)
+    cached_title_key = (
+        title_cache_key_path.read_text(encoding="utf-8").strip()
+        if title_cache_key_path.exists()
+        else ""
+    )
+    if (
+        args.force
+        or not title_raw.exists()
+        or not title_vtt.exists()
+        or cached_title_key != expected_title_key
+    ):
+        tts_requests.append(
+            (
+                title_text,
+                title_raw,
+                title_vtt,
+                title_profile,
+                title_cache_key_path,
+                expected_title_key,
+            )
+        )
 
     scene_list = storyboard["scenes"]
     fps = int(storyboard["project"]["fps"])
@@ -179,6 +288,35 @@ def main() -> int:
             f"Storyboard is {total:.3f}s but picture is {picture_duration:.3f}s; rebuild or fix the timeline"
         )
 
+    if tts_requests:
+        worker_count = min(args.tts_concurrency, len(tts_requests))
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            futures = [
+                executor.submit(
+                    synthesize_cached,
+                    text,
+                    media,
+                    subtitles,
+                    selected_profile,
+                    cache_key_path,
+                    expected_key,
+                )
+                for (
+                    text,
+                    media,
+                    subtitles,
+                    selected_profile,
+                    cache_key_path,
+                    expected_key,
+                ) in tts_requests
+            ]
+            for future in as_completed(futures):
+                future.result()
+        print(
+            f"Synthesized {len(tts_requests)} connected TTS item(s) "
+            f"with {worker_count} worker(s)"
+        )
+
     group_rows: list[dict] = []
     cue_rows: list[dict] = []
     group_paths: list[Path] = []
@@ -188,8 +326,6 @@ def main() -> int:
         vtt = raw_dir / f"{group_id}.vtt"
         trimmed = work_dir / f"{group_id}-outer-trim.wav"
         aligned = group_dir / f"{group_id}.wav"
-        if args.force or not raw.exists() or not vtt.exists():
-            synthesize(group["speech_text"], raw, vtt, profile)
         cues = parse_vtt(vtt)
         scene_ids = group["scene_ids"]
         if len(cues) != len(scene_ids):
@@ -300,22 +436,6 @@ def main() -> int:
         "-ar", "48000", "-ac", "2", str(voiced),
     ])
 
-    cover_cfg = config.get("cover") or config.get("release", {})
-    cover_voice = cover_cfg.get("cover_voice", {})
-    cover_duration = float(cover_cfg.get("duration_sec", cover_cfg.get("cover_duration_sec", 2.7)))
-    title_text = str(
-        cover_cfg.get("title_audio_text") or cover_voice.get("text") or storyboard["project"]["title"]
-    )
-    title_profile = {
-        **profile,
-        **{key: cover_voice[key] for key in ("rate", "pitch", "volume") if key in cover_voice},
-    }
-    title_head = float(cover_voice.get("head_sec", cover_cfg.get("title_head_sec", 0.12)))
-    title_raw = work_dir / "cover-title.mp3"
-    title_vtt = work_dir / "cover-title.vtt"
-    title_base = work_dir / "cover-title-base.wav"
-    title_trimmed = work_dir / "cover-title.wav"
-    synthesize(title_text, title_raw, title_vtt, title_profile)
     title_cues = parse_vtt(title_vtt)
     if not title_cues:
         raise RuntimeError("Cover title TTS did not produce VTT cues")

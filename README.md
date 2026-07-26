@@ -50,6 +50,7 @@
 git clone https://github.com/gnipbao/story-to-handdrawn-video.git
 cd story-to-handdrawn-video
 npm ci
+uv pip sync requirements.lock  # 或: python3 -m pip install -r requirements.txt
 npm run check      # TypeScript 检查 + 分镜结构校验,不访问网络
 ```
 
@@ -123,9 +124,68 @@ export STORY_VIDEO_PROJECT=/absolute/path/to/story-to-handdrawn-video
 - 需要精确的一行一镜时，使用 `--scene-contract` 并让 `visual-plan.json` 从 `01` 起连续覆盖全部非空行：长旁白保持在该镜内，不再被自动子句切分；每镜必须提供 1–3 行 `caption` 和 2–15 秒 `duration_sec`，从而把"完整旁白"和"可读字幕"分开。`ink-comic` 的正式字幕随后从最终 TTS 配置逐句回填。未显式启用时仍使用原有自动分句。
 - 新集只需新增某个角色时，把"本集新角色参考图"的窄范围描述放进独立文件并传给 `--character-reference-prompt`；完整的 `--character-lock` 仍负责全剧连续性，但不会把其中提到的所有旧角色都画进新参考图。
 - 并行制作多集时，为每集同时指定独立的 `--output /episode/storyboard.json` 与 `--manifest /episode/codex-image-jobs.json`；manifest 会绑定该 storyboard，避免后生成的集数覆盖前集 import 目标。
+- 使用 `--jobs 4` 控制独立任务并发。角色参考图先生成；引用该角色的场景图随后并行。素材导入和连续叙事组 TTS 也复用这个并发上限。
 - 遇到时间跳跃、指代不明、医疗场景或年龄敏感角色时,建议先让 Agent 给出视觉规划(两位场景编号为键的 JSON),确认后再生成。
 - 默认使用 Codex Image2 生成图片;只有明确要求时才会走 OpenAI API(需 `OPENAI_API_KEY`)。
 - 先验收静音视觉预览，再冻结连续配音文案；`ink-comic` 回填逐字字幕后才渲染正式静音画面母版。不要用逐镜头 TTS 或逐句变速。
+
+异步工作流遵循依赖关系，而不是把所有步骤同时启动：
+
+```text
+视觉规划
+  → 角色参考图
+  → 场景图并行生成
+  → 素材并行转码
+  → 静音画面母版
+  → 连续旁白组并行 TTS
+  → 配音/封面合成
+  → 交付审计
+```
+
+单集 Remotion 始终保持 `concurrency=1`。需要更高吞吐时并行不同集，每集使用独立的 storyboard、manifest、渲染暂存目录和输出目录：
+
+```bash
+python3 scripts/run_story_video.py \
+  --episode s01-e01 --jobs 4 \
+  --input /absolute/story.txt \
+  --output episodes/s01-e01/storyboard.json \
+  --manifest episodes/s01-e01/codex-image-jobs.json \
+  --mode generate
+
+npm run import:codex -- \
+  --manifest episodes/s01-e01/codex-image-jobs.json \
+  --jobs 4
+
+npm run release -- \
+  --episode s01-e01 \
+  --storyboard episodes/s01-e01/storyboard.json \
+  --config episodes/s01-e01/voiceover.json \
+  --jobs 4
+
+npm run release:batch -- examples/batch.example.json --jobs 2 --tts-jobs 3
+```
+
+如果希望命令立即返回、后台继续工作，使用异步作业入口。它会把状态和日志写到 `.work/jobs/<job-id>/`；失败后 `resume` 会复用已经通过内容哈希验证的 TTS、画面和封面产物，从最近可用阶段继续：
+
+```bash
+npm run job -- submit \
+  --episode s01-e01 \
+  --storyboard episodes/s01-e01/storyboard.json \
+  --config episodes/s01-e01/voiceover.json \
+  --jobs 4
+
+npm run job -- list
+npm run job -- status <job-id>
+npm run job -- log <job-id>
+npm run job -- resume <job-id>
+```
+
+渲染前只会把当前 storyboard 引用的字体和素材暂存到 `.work/render/`，不会再把整个历史素材库打进 Remotion bundle。清理 30 天前且没有被任何当前 storyboard 引用的素材时，先预览再确认：
+
+```bash
+npm run assets:prune
+npm run assets:prune -- --apply --keep-days 30
+```
 
 导入或预览前先审计本集运动时间线，并再跑渲染器自身校验：
 
@@ -201,7 +261,8 @@ npm run render
 | 配音 | 审片版 | `out/<episode>/voiced/preview.mp4` |
 | 配音 | 发布版 | `out/<episode>/voiced/release.mp4` · `out/releases/<episode>.mp4`（快查副本） |
 
-多集并发时设置 `EPISODE` 环境变量互不覆盖：`EPISODE=s01-e05 npm run render`。
+多集并发时必须同时隔离 episode 和 storyboard：
+`npm run render -- --episode s01-e05 --storyboard episodes/s01-e05/storyboard.json`。
 中间产物（TTS 分组、VTT）写入 `.work/<episode>/`。
 
 - 分辨率：`diary`/`essay` 正式版 1080×1440；`ink-comic` 正式版 1920×1080
@@ -322,6 +383,10 @@ Preview first (720×960 for `diary`, 1280×720 for `ink-comic`, before committin
 
 Notes: one complete sentence per beat by default; Codex Image2 is the default image generator. For exact one-line-per-scene planning, pass `--scene-contract` with a consecutive `01..NN` visual plan covering every non-empty source line. Each entry must include a 1–3 line `caption` and `duration_sec` in `2..15`; without the flag, the established automatic sentence splitter remains active. Keep the full spoken thought in the source line and the shorter screen copy in `caption`. In `ink-comic`, freeze the final voiceover config and run `scripts/apply_verbatim_subtitles.py` before the final render so the bottom transcript matches the actual TTS; the shorter planning caption is retained only as `summary_text`. When an episode introduces only one new recurring character, pass a narrow brief with `--character-reference-prompt`; the broader `--character-lock` remains continuity context and no longer expands the reference-sheet cast. For parallel episodes, pair an episode-specific `--output` with its `--manifest` so later planning cannot redirect an earlier import. Preserve and inspect every untouched illustration original. If a semantic PASS has only a near-white generated field, `scripts/normalize-illustration-master.py` may perform whole-frame normalization, uniform downscale, and exact-white centering; it must never rescue a cropped, semantically wrong, or identity-leaking image, and the derivative must still pass `scripts/audit-illustration-masters.py`. Before import or preview, run `python3 scripts/audit_motion_timeline.py <timeline> --expected-duration <seconds>` and the renderer's storyboard validator. During planning only, `validate-storyboard.mjs --allow-missing-assets <storyboard>` checks structure before illustrations exist; omit that flag for every import, preview, and delivery gate. The audit deliberately accepts only the same seven motions as the renderer: `hold`, `push_soft`, `push_left`, `push_right`, `pull_soft`, `pan_left`, and `pan_right`. Approve the silent master first, then use `scripts/build_story_audio.py` with an episode config. Narration is synthesized as connected acts; VTT timestamps measure sync but never cut prose into sentence clips.
 
+Use `--jobs 4` for independent image import and connected-group TTS work. The generated Codex manifest declares a dependency graph: reference jobs run first, then scene jobs may run in parallel. Per-episode Remotion rendering remains at `concurrency=1`; parallelize isolated episodes instead. `npm run release -- ...` builds one audited release, while `npm run release:batch -- examples/batch.example.json --jobs 2` runs isolated episodes concurrently. Rendering stages only assets referenced by the selected storyboard under `.work/render/`.
+
+For non-blocking operation, use `npm run job -- submit ...`. It returns a job ID immediately while the detached worker continues in the background. Inspect it with `job -- status`, `job -- log`, or `job -- list`; use `job -- resume` after a failure. State and logs live under `.work/jobs/<job-id>/`, and resumptions reuse content-hash-validated TTS plus current render artifacts.
+
 Per-scene transitions use a strict contract. A missing
 `transition_to_next` means `cut`. A `fade` uses
 `project.transition_sec` (0.7 seconds by default; 0.5–0.9 allowed), freezes
@@ -343,7 +408,7 @@ layer-plan boundary tests.
 | Narrated review | no cover | `out/<episode>/voiced/preview.mp4` |
 | Public release | audible cover | `out/<episode>/voiced/release.mp4` · `out/releases/<episode>.mp4` (quick-find copy) |
 
-Set `EPISODE=...` for multi-episode isolation. Intermediates (TTS groups, VTT) reside in `.work/<episode>/`.
+For multi-episode isolation, pass both `--episode` and `--storyboard`. Intermediates (TTS groups, VTT, scoped render assets) reside under `.work/`.
 
 Final picture is 1080×1440 H.264 in `diary`/`essay` mode or 1920×1080 in `ink-comic`; previews follow the same aspect ratio. Narration defaults to a 48 kHz PCM master around -16 LUFS and a stereo AAC release. The full behavior contract lives in [SKILL.md](skill-package/story-to-handdrawn-video/SKILL.md).
 

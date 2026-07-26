@@ -1,20 +1,14 @@
 #!/usr/bin/env python3
 import argparse
 import csv
+import json
 import pathlib
 import sys
 from collections import Counter
 
 
-ALLOWED = {
-    "hold",
-    "push_soft",
-    "pull_soft",
-    "push_left",
-    "push_right",
-    "pan_left",
-    "pan_right",
-}
+MOTION_PROFILES = pathlib.Path(__file__).resolve().parents[1] / "src/motion-profiles.json"
+ALLOWED = set(json.loads(MOTION_PROFILES.read_text(encoding="utf-8")))
 SETTLED = {"hold", "push_soft", "pull_soft"}
 
 

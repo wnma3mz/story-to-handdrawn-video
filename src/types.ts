@@ -1,6 +1,9 @@
+import motionProfiles from './motion-profiles.json';
+
 export type LayerId = 'text' | 'bw_full' | 'detail' | 'color';
 
 export type VisualMode = 'diary' | 'ink-comic' | 'essay';
+export type MotionId = keyof typeof motionProfiles;
 
 /**
  * How the illustration plate is produced for a scene.
@@ -28,25 +31,13 @@ export type SceneData = {
   narration?: string;
   visual: string;
   shot: string;
-  focus?: 'center' | 'left' | 'right' | 'top' | 'bottom' | string;
-  motion?:
-    | 'hold'
-    | 'push_soft'
-    | 'push'
-    | 'push_left'
-    | 'push_right'
-    | 'pull_soft'
-    | 'pull'
-    | 'pan_left'
-    | 'pan_right'
-    | 'pan_up'
-    | 'pan_down'
-    | string;
+  focus?: 'center' | 'left' | 'right' | 'top' | 'bottom';
+  motion?: MotionId;
   /**
    * Omitted legacy values are interpreted as a direct cut. A fade is an
    * outgoing overlay on the next scene and cannot be combined with page-flip.
    */
-  transition_to_next?: 'cut' | 'fade' | string;
+  transition_to_next?: 'cut' | 'fade';
   visual_interval_id?: string;
   visual_interval_start?: boolean;
   visual_interval_progress_start?: number;
@@ -59,7 +50,7 @@ export type SceneData = {
   plate_mode?: PlateMode;
   /** Procedural SVG motif plate when plate_mode is code. */
   code_plate?: CodePlateSpec | null;
-  scene_kind?: 'host' | 'narrative' | 'evidence' | 'map' | 'title' | string;
+  scene_kind?: 'host' | 'narrative' | 'evidence' | 'map' | 'title';
   glyph?: string | null;
   case_label?: string | null;
   accent?: string | null;

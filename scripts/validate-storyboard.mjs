@@ -10,19 +10,10 @@ const storyboardFiles = files.length > 0
   ? files
   : ['storyboard.json', 'storyboard.uploaded.json'];
 
-const allowedMotions = new Set([
-  'hold',
-  'push_soft',
-  'push',
-  'push_left',
-  'push_right',
-  'pull_soft',
-  'pull',
-  'pan_left',
-  'pan_right',
-  'pan_up',
-  'pan_down',
-]);
+const motionProfiles = JSON.parse(
+  readFileSync(resolve(root, 'src/motion-profiles.json'), 'utf8'),
+);
+const allowedMotions = new Set(Object.keys(motionProfiles));
 
 const allowedPlateModes = new Set(['raster', 'svg', 'code']);
 const codePlateMotifs = new Set([
@@ -146,6 +137,13 @@ const validate = (file) => {
     }
     if (scene.motion && !allowedMotions.has(scene.motion)) {
       errors.push(`${label}: unsupported motion ${JSON.stringify(scene.motion)}`);
+    }
+    if (
+      project.visual_mode === 'essay' &&
+      scene.motion &&
+      !['hold', 'push_soft'].includes(scene.motion)
+    ) {
+      errors.push(`${label}: essay mode accepts only hold or push_soft`);
     }
     if (typeof scene.text !== 'string') {
       errors.push(`${label}: text must be a string`);

@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add dependency-aware asynchronous production: reference-first/scene-parallel
+  image manifests, parallel asset transcoding, parallel connected-group TTS,
+  isolated batch releases, and episode-scoped Remotion public assets.
+- Add detached background release jobs with status/log inspection and
+  content-hash-backed failure resumption.
+- Add episode-local storyboard rendering, single-command release orchestration,
+  dry-run generated-asset pruning, and reproducible Python/Node dependency locks.
 - Add a reusable continuous-narration and audible-cover release workflow:
   connected TTS groups, VTT-based semantic sync, configurable narrator profiles,
   a 2.7-second non-white code-typeset cover with title audio, separate picture /
@@ -23,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Align the Python CLI with `essay` mode and the documented episode output paths.
+- Make the seven-motion vocabulary a single renderer-backed contract.
 - Preserve every copied picture packet in the no-cover voiced master when the
   narration and frame-grid durations differ by less than one frame.
 

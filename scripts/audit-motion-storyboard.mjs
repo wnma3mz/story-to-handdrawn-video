@@ -43,7 +43,7 @@ for (const interval of intervals) {
   const safetyZoomPct = (Math.min(profile.startScale, profile.endScale) - 1) * 100;
   if (interval.motion === 'push_soft' || interval.motion === 'pull_soft') {
     if (scaleDeltaPct < 1.4) errors.push(`${interval.id}: soft zoom is below 1.4%`);
-  } else if (['push', 'pull', 'push_left', 'push_right'].includes(interval.motion)) {
+  } else if (['push_left', 'push_right'].includes(interval.motion)) {
     if (scaleDeltaPct < 2.4) errors.push(`${interval.id}: active zoom is below 2.4%`);
   } else if (interval.motion.startsWith('pan_')) {
     if (panTraversePx < 24) errors.push(`${interval.id}: pan traverse is below 24px`);
@@ -60,7 +60,9 @@ for (const interval of intervals) {
 }
 
 const vocabulary = new Set(intervals.map(({motion}) => motion));
-const settled = intervals.filter(({motion}) => ['hold', 'push_soft'].includes(motion)).length;
+const settled = intervals.filter(({motion}) =>
+  ['hold', 'push_soft', 'pull_soft'].includes(motion),
+).length;
 const summary = {
   status: errors.length ? 'FAIL' : 'PASS',
   intervals: intervals.length,

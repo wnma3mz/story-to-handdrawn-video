@@ -1,9 +1,12 @@
-import {execFileSync, spawnSync} from 'node:child_process';
+import {execFile, execFileSync} from 'node:child_process';
 import {copyFileSync, existsSync, readFileSync} from 'node:fs';
+import {availableParallelism} from 'node:os';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {promisify} from 'node:util';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const execFileAsync = promisify(execFile);
 
 const parseArgs = (tokens) => {
   const parsed = {};
@@ -23,6 +26,10 @@ const parseArgs = (tokens) => {
 };
 
 const args = parseArgs(process.argv.slice(2));
+const jobs = Number(args.jobs || process.env.ASSET_JOBS || Math.min(4, availableParallelism()));
+if (!Number.isInteger(jobs) || jobs < 1 || jobs > 16) {
+  throw new Error('--jobs must be an integer within 1..16');
+}
 const manifestPath = resolve(root, String(args.manifest || 'codex-image-jobs.json'));
 if (!existsSync(manifestPath)) throw new Error(`Missing Codex manifest: ${manifestPath}`);
 
@@ -43,8 +50,10 @@ if (missing.length > 0) {
 const captionCropHeight = 342;
 const captionScanHeight = 400;
 
-const detectCaptionCropY = (masterPath) => {
-  const detection = spawnSync(
+const detectCaptionCropY = async (masterPath) => {
+  let detection;
+  try {
+    detection = await execFileAsync(
     'ffmpeg',
     [
       '-hide_banner',
@@ -62,12 +71,19 @@ const detectCaptionCropY = (masterPath) => {
       'null',
       '-',
     ],
-    {cwd: root, encoding: 'utf8'},
-  );
+      {cwd: root, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024},
+    );
+  } catch (error) {
+    detection = {
+      stdout: error.stdout || '',
+      stderr: error.stderr || '',
+      failed: true,
+    };
+  }
   const log = `${detection.stdout || ''}\n${detection.stderr || ''}`;
   const matches = [...log.matchAll(/crop=(\d+):(\d+):(\d+):(\d+)/g)];
   const last = matches.at(-1);
-  if (detection.status !== 0 || !last) {
+  if (detection.failed || !last) {
     console.warn(`Could not detect caption bounds for ${masterPath}; using top-aligned crop`);
     return 0;
   }
@@ -78,7 +94,14 @@ const detectCaptionCropY = (masterPath) => {
   return Math.max(0, Math.min(captionScanHeight - captionCropHeight, centeredY));
 };
 
-for (const job of manifest.jobs.filter((item) => item.role !== 'reference')) {
+const runFfmpeg = (commandArgs) =>
+  execFileAsync('ffmpeg', commandArgs, {
+    cwd: root,
+    encoding: 'utf8',
+    maxBuffer: 8 * 1024 * 1024,
+  });
+
+const processJob = async (job) => {
   const masterPath = resolve(job.output_master);
   const assetDir = dirname(masterPath);
   const textPath = resolve(assetDir, `${job.id}_text.png`);
@@ -86,10 +109,8 @@ for (const job of manifest.jobs.filter((item) => item.role !== 'reference')) {
   const colorPath = resolve(assetDir, `${job.id}_color.png`);
 
   if (manifest.text_mode === 'image2') {
-    const captionCropY = detectCaptionCropY(masterPath);
-    execFileSync(
-      'ffmpeg',
-      [
+    const captionCropY = await detectCaptionCropY(masterPath);
+    await runFfmpeg([
         '-hide_banner',
         '-loglevel',
         'error',
@@ -101,16 +122,12 @@ for (const job of manifest.jobs.filter((item) => item.role !== 'reference')) {
         '1',
         '-y',
         textPath,
-      ],
-      {cwd: root, stdio: 'inherit'},
-    );
+    ]);
   }
 
   const inkComic = manifest.visual_mode === 'ink-comic';
 
-  execFileSync(
-    'ffmpeg',
-    [
+  await runFfmpeg([
       '-hide_banner',
       '-loglevel',
       'error',
@@ -126,13 +143,9 @@ for (const job of manifest.jobs.filter((item) => item.role !== 'reference')) {
       '1',
       '-y',
       bwPath,
-    ],
-    {cwd: root, stdio: 'inherit'},
-  );
+  ]);
 
-  execFileSync(
-    'ffmpeg',
-    [
+  await runFfmpeg([
       '-hide_banner',
       '-loglevel',
       'error',
@@ -146,12 +159,29 @@ for (const job of manifest.jobs.filter((item) => item.role !== 'reference')) {
       '1',
       '-y',
       colorPath,
-    ],
-    {cwd: root, stdio: 'inherit'},
-  );
+  ]);
 
   console.log(`Imported scene ${job.id} → ${assetDir}`);
-}
+};
+
+const mapConcurrent = async (values, concurrency, worker) => {
+  let cursor = 0;
+  const runners = Array.from(
+    {length: Math.min(concurrency, values.length)},
+    async () => {
+      while (cursor < values.length) {
+        const index = cursor;
+        cursor += 1;
+        await worker(values[index]);
+      }
+    },
+  );
+  await Promise.all(runners);
+};
+
+const sceneJobs = manifest.jobs.filter((item) => item.role !== 'reference');
+await mapConcurrent(sceneJobs, jobs, processJob);
+console.log(`Imported ${sceneJobs.length} scenes with ${jobs} parallel worker(s)`);
 
 if (args.apply === true) {
   copyFileSync(resolve(manifest.storyboard), resolve(root, 'storyboard.json'));

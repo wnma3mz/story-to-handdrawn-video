@@ -385,8 +385,10 @@ const storyboard = {
   scenes,
 };
 
-const storyboardPath = resolve(root, 'storyboard.uploaded.json');
-const manifestPath = resolve(root, 'uploaded-pages.json');
+const storyboardPath = resolve(root, String(args.output || 'storyboard.uploaded.json'));
+const manifestPath = resolve(root, String(args.manifest || 'uploaded-pages.json'));
+mkdirSync(dirname(storyboardPath), {recursive: true});
+mkdirSync(dirname(manifestPath), {recursive: true});
 writeFileSync(storyboardPath, `${JSON.stringify(storyboard, null, 2)}\n`);
 writeFileSync(
   manifestPath,

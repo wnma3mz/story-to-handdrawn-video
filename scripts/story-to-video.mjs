@@ -4,10 +4,20 @@ import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {homedir} from 'node:os';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {
+  durationFor,
+  formatCaption,
+  hasTerminalPunctuation,
+  splitStory,
+} from './lib/story-text.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 const styles = JSON.parse(readFileSync(resolve(root, 'config/styles.json'), 'utf8'));
+const motionProfiles = JSON.parse(
+  readFileSync(resolve(root, 'src/motion-profiles.json'), 'utf8'),
+);
+const allowedMotions = new Set(Object.keys(motionProfiles));
 const fill = (text, vars) => text.replace(/\{(\w+)\}/g, (_, key) => (vars && key in vars) ? String(vars[key]) : `{${key}}`);
 
 const parseArgs = (tokens) => {
@@ -65,6 +75,7 @@ const shouldRender = args.render === true;
 const shouldForce = args.force === true;
 const sceneContract = args['scene-contract'] === true;
 const visualMode = String(args['visual-mode'] || 'diary');
+const generationConcurrency = Number(args.jobs || 4);
 
 if (!['image2', 'font'].includes(textMode)) {
   throw new Error('--text-mode must be image2 or font');
@@ -74,6 +85,13 @@ if (!['codex', 'api'].includes(generator)) {
 }
 if (!['diary', 'ink-comic', 'essay'].includes(visualMode)) {
   throw new Error('--visual-mode must be diary, ink-comic, or essay');
+}
+if (
+  !Number.isInteger(generationConcurrency) ||
+  generationConcurrency < 1 ||
+  generationConcurrency > 16
+) {
+  throw new Error('--jobs must be an integer within 1..16');
 }
 if (visualMode === 'ink-comic' && textMode === 'image2') {
   throw new Error('--visual-mode ink-comic uses code subtitles; choose --text-mode font');
@@ -109,112 +127,6 @@ if (shouldGenerateWithApi && !process.env.OPENAI_API_KEY) {
   );
 }
 
-const terminalPunctuation = /[。！？!?；;]$/;
-const narrativeTurn = /^(后来|然后|接着|突然|可是|但是|但|却|于是|直到|最后|没想到|第二天|那天|这时)/;
-
-const hardChunk = (value, maxLength = 36) => {
-  const chunks = [];
-  let remaining = value.trim();
-
-  while (remaining.length > maxLength) {
-    const window = remaining.slice(0, maxLength + 1);
-    let cut = Math.max(
-      window.lastIndexOf('，'),
-      window.lastIndexOf('、'),
-      window.lastIndexOf('；'),
-    );
-    if (cut < Math.floor(maxLength * 0.55)) cut = maxLength;
-    else cut += 1;
-    chunks.push(remaining.slice(0, cut).trim());
-    remaining = remaining.slice(cut).trim();
-  }
-  if (remaining) chunks.push(remaining);
-  return chunks;
-};
-
-const splitLongBeat = (sentence, softLimit = 36) => {
-  const value = sentence.trim();
-  if (value.length <= softLimit) return [value];
-
-  const ending = value.match(/[。！？!?；;]$/)?.[0] || '';
-  const body = ending ? value.slice(0, -1) : value;
-  const clauses = body
-    .split(/(?<=，|、)|(?=(?:后来|然后|接着|突然|可是|但是|但|却|于是|直到|最后|没想到|第二天|那天|这时))/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-
-  if (clauses.length === 1) return hardChunk(value, softLimit);
-
-  const beats = [];
-  let current = '';
-  for (const clause of clauses) {
-    const candidate = `${current}${clause}`;
-    const startsNewBeat = narrativeTurn.test(clause) && current.length >= 12;
-    if (current && (candidate.length > softLimit || startsNewBeat)) {
-      beats.push(current.replace(/[，、]$/, '。'));
-      current = clause;
-    } else {
-      current = candidate;
-    }
-  }
-  if (current) beats.push(`${current.replace(/[，、]$/, '')}${ending || '。'}`);
-  return beats.flatMap((beat) => hardChunk(beat, softLimit));
-};
-
-const splitStory = (text) => {
-  const normalized = text.replace(/\r/g, '').replace(/[ \t]+/g, ' ').trim();
-  const paragraphs = normalized.split(/\n+/).map((part) => part.trim()).filter(Boolean);
-  const beats = [];
-
-  for (const paragraph of paragraphs) {
-    const sentences = paragraph.match(/[^。！？!?；;]+[。！？!?；;]?/g) || [];
-    for (const sentence of sentences) {
-      beats.push(...splitLongBeat(sentence));
-    }
-  }
-
-  return beats
-    .map((beat) => beat.trim())
-    .filter(Boolean)
-    .map((beat) => (terminalPunctuation.test(beat) ? beat : `${beat}。`));
-};
-
-const formatCaption = (text, maxCharsPerLine = 13, maxLines = 3) => {
-  const lines = [];
-  let remaining = text.trim();
-  while (remaining) {
-    if (remaining.length <= maxCharsPerLine) {
-      lines.push(remaining);
-      break;
-    }
-    const window = remaining.slice(0, maxCharsPerLine + 1);
-    let cut = Math.max(
-      window.lastIndexOf('，'),
-      window.lastIndexOf('、'),
-      window.lastIndexOf('；'),
-      window.lastIndexOf('：'),
-    );
-    if (cut < Math.floor(maxCharsPerLine * 0.45)) cut = maxCharsPerLine;
-    else cut += 1;
-    lines.push(remaining.slice(0, cut).trim());
-    remaining = remaining.slice(cut).trim();
-    if (/^[。！？!?；;：:,，、]/.test(remaining)) {
-      lines[lines.length - 1] += remaining[0];
-      remaining = remaining.slice(1).trim();
-    }
-  }
-  if (lines.length > maxLines) {
-    throw new Error(`Caption needs ${lines.length} lines; story beat must be split before rendering`);
-  }
-  return lines.join('\n');
-};
-
-const durationFor = (caption) => {
-  const lineCount = caption.split('\n').length;
-  const characterCount = caption.replace(/\n/g, '').length;
-  return Number(Math.min(6.2, Math.max(4.4, 3.8 + lineCount * 0.48 + characterCount * 0.035)).toFixed(1));
-};
-
 const style = styles[visualMode];
 const styleLock = style.styleLock;
 const characterLock = String(
@@ -236,7 +148,7 @@ const sourceParagraphs = sourceText
   .split(/\n+/)
   .map((part) => part.trim())
   .filter(Boolean)
-  .map((part) => (terminalPunctuation.test(part) ? part : `${part}。`));
+  .map((part) => (hasTerminalPunctuation(part) ? part : `${part}。`));
 const plannedSceneIds = Object.keys(visualPlan).filter((key) => /^\d+$/.test(key));
 const hasCompleteParagraphPlan =
   plannedSceneIds.length === sourceParagraphs.length &&
@@ -419,8 +331,9 @@ const scenes = [];
 const codexJobs = [];
 
 let codexCharacterReference = null;
-if (generator === 'codex') {
-  const suppliedCharacterReference = args['character-reference']
+let suppliedCharacterReference = null;
+if (generator === 'codex' && visualMode !== 'essay') {
+  suppliedCharacterReference = args['character-reference']
     ? resolve(root, String(args['character-reference']))
     : null;
   if (suppliedCharacterReference && !existsSync(suppliedCharacterReference)) {
@@ -447,6 +360,7 @@ Constraints: this is an identity reference only; no text, letters, numbers, labe
     codexJobs.push({
       id: 'character_reference',
       role: 'reference',
+      depends_on: [],
       prompt_file: characterPrompt,
       prompt: readFileSync(characterPrompt, 'utf8').trim(),
       output_master: codexCharacterReference,
@@ -478,6 +392,12 @@ for (let index = 0; index < storyParts.length; index += 1) {
   const shotType = String(structuredVisualPlan.shot_type || 'story_beat');
   const focus = String(structuredVisualPlan.focus || 'center');
   const motion = String(structuredVisualPlan.motion || 'hold');
+  if (!allowedMotions.has(motion)) {
+    throw new Error(
+      `${id}: unsupported motion ${JSON.stringify(motion)}; ` +
+        `expected one of ${[...allowedMotions].join(', ')}`,
+    );
+  }
   const sceneTransition = String(structuredVisualPlan.transition || 'cut');
   const sceneKind = String(structuredVisualPlan.scene_kind || 'narrative');
   const glyph = structuredVisualPlan.glyph ? String(structuredVisualPlan.glyph) : null;
@@ -679,6 +599,12 @@ note: no Image2 master; renderer draws this plate in code or loads the static SV
     codexJobs.push({
       id,
       role: 'scene',
+      depends_on:
+        visualMode !== 'essay' &&
+        codexCharacterReference &&
+        !suppliedCharacterReference
+          ? ['character_reference']
+          : [],
       prompt_file: masterPrompt,
       prompt: readFileSync(masterPrompt, 'utf8').trim(),
       output_master: absoluteAsset(masterName),
@@ -690,7 +616,7 @@ note: no Image2 master; renderer draws this plate in code or loads the static SV
   }
 
   const essayMotion = visualMode === 'essay'
-    ? (['hold', 'push_soft', 'pull_soft'].includes(motion) ? motion : 'push_soft')
+    ? (['hold', 'push_soft'].includes(motion) ? motion : 'push_soft')
     : motion;
   const useSimpleLayers =
     !needsRasterMaster || visualMode === 'essay' || visualMode === 'ink-comic';
@@ -772,13 +698,18 @@ const storyboard = {
   scenes,
 };
 
-const outputPath = shouldApply
-  ? resolve(root, 'storyboard.json')
-  : resolve(root, String(args.output || 'storyboard.generated.json'));
+const outputPath = resolve(
+  root,
+  String(args.output || (shouldApply ? 'storyboard.json' : 'storyboard.generated.json')),
+);
+mkdirSync(dirname(outputPath), {recursive: true});
 writeFileSync(outputPath, `${JSON.stringify(storyboard, null, 2)}\n`);
 
+let codexManifestPath = null;
 if (generator === 'codex') {
   const manifestPath = resolve(root, String(args.manifest || 'codex-image-jobs.json'));
+  codexManifestPath = manifestPath;
+  mkdirSync(dirname(manifestPath), {recursive: true});
   writeFileSync(
     manifestPath,
     `${JSON.stringify(
@@ -790,6 +721,21 @@ if (generator === 'codex') {
         asset_set: assetSet,
         storyboard: outputPath,
         text_mode: textMode,
+        execution: {
+          max_concurrency: generationConcurrency,
+          stages: [
+            {
+              id: 'references',
+              roles: ['reference'],
+              max_concurrency: 1,
+            },
+            {
+              id: 'scenes',
+              roles: ['scene'],
+              max_concurrency: generationConcurrency,
+            },
+          ],
+        },
         jobs: codexJobs,
       },
       null,
@@ -805,10 +751,14 @@ console.log(
     (shouldGenerateWithApi
       ? `Image 2 API assets → ${assetDir}`
       : shouldPrepareCodex
-        ? `Codex built-in Image2 queue prepared. Generate each manifest job, then import it with npm run import:codex -- --apply.`
+        ? `Codex Image2 queue prepared at ${codexManifestPath}. Run reference jobs first, then scene jobs concurrently, and import that manifest after generation.`
         : `Plan-only mode. Codex Image2 is the default and does not require OPENAI_API_KEY; add --generate to prepare its job manifest.`),
 );
 
 if (shouldRender) {
-  execFileSync('npm', ['run', 'render'], {cwd: root, stdio: 'inherit'});
+  execFileSync(
+    'npm',
+    ['run', 'render', '--', '--storyboard', outputPath],
+    {cwd: root, stdio: 'inherit'},
+  );
 }

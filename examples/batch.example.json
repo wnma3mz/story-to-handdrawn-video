@@ -1,0 +1,14 @@
+{
+  "episodes": [
+    {
+      "episode": "s01-e01",
+      "storyboard": "../episodes/s01-e01/storyboard.json",
+      "config": "../episodes/s01-e01/voiceover.json"
+    },
+    {
+      "episode": "s01-e02",
+      "storyboard": "../episodes/s01-e02/storyboard.json",
+      "config": "../episodes/s01-e02/voiceover.json"
+    }
+  ]
+}

@@ -25,6 +25,8 @@ const entries = [
   'public/assets/03_color.svg',
   'public/fonts',
   'references',
+  'requirements.lock',
+  'requirements.txt',
   'remotion.config.ts',
   'scripts',
   'skill-package',

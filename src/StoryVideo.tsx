@@ -185,13 +185,14 @@ const PlannedSceneLayer: React.FC<{layer: SceneLayerPlan}> = ({layer}) => {
   const opacity = sceneLayerOpacityForFrame(layer, frame);
   const contentFrame = sceneContentFrameForLayerFrame(layer, frame);
   const sceneContent = <Scene scene={layer.scene} />;
+  const hasFreezeTail = layer.freezeFrame !== null;
 
   return (
-    <AbsoluteFill style={{opacity}}>
-      {contentFrame === frame ? (
-        sceneContent
-      ) : (
+    <AbsoluteFill style={opacity === 1 ? undefined : {opacity}}>
+      {hasFreezeTail ? (
         <Freeze frame={contentFrame}>{sceneContent}</Freeze>
+      ) : (
+        sceneContent
       )}
     </AbsoluteFill>
   );
