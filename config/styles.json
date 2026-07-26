@@ -46,16 +46,16 @@
     },
 
     "scenePrompt": {
-      "useCase": "historical-scene",
+      "useCase": "illustration-story",
       "inputImagesNote": "the supplied original-video frames are style references",
       "createLine": "one concrete, immediately readable tableau for that sentence. Use the locked recurring protagonists whenever the current sentence requires them.",
-      "constraintsPrefix": "non-graphic historical suspense, no gore; period-accurate Northern Song clothing, architecture and objects; ",
-      "constraintsSuffix": "; no photorealism, glossy 3D, anime styling, modern props or watermark"
+      "constraintsPrefix": "non-graphic story illustration; preserve the time period, setting, clothing, architecture and objects stated or clearly implied by the source; ",
+      "constraintsSuffix": "; no photorealism, glossy 3D, anime styling, anachronistic props or watermark"
     }
   },
 
   "ink-comic": {
-    "styleLock": "full-screen Northern Song monochrome motion-comic illustration, bold black ink outlines, expressive adult faces, grayscale ink-wash depth, restrained paper grain, dramatic but readable staging, selective vermilion or muted field-green color only on the active clue, no fixed white diary page, no photorealism, glossy 3D, anime styling, modern collage typography or watermark",
+    "styleLock": "full-screen monochrome motion-comic illustration, bold black ink outlines, expressive faces, grayscale ink-wash depth, restrained paper grain, dramatic but readable staging, source-accurate period and setting, selective vermilion or muted green only on the active narrative focus, no fixed white diary page, no photorealism, glossy 3D, anime styling, modern collage typography or watermark",
     "exportSize": [1920, 1080],
     "ratio": "16:9",
     "width": 1920,
@@ -78,32 +78,32 @@
     },
 
     "assetType": {
-      "font": "one full-bleed 16:9 production panel for a historical monochrome motion-comic"
+      "font": "one full-bleed 16:9 production panel for a monochrome motion-comic"
     },
 
-    "compositionRule": "Compose for a 16:9 full-screen frame. Use cinematic foreground, middle ground and background separation suitable for a restrained 2.5D push. Keep every face, hand and active clue inside the central 82% safe area and the bottom 18% free of essential detail for subtitles. Cropping secondary architecture at the frame edge is allowed; never crop the active clue.",
-    "colorRule": "Render 90–95% of the frame in black, charcoal and warm gray. Use {accent} only on the single active clue or emotional focal object; do not color whole costumes or backgrounds.",
+    "compositionRule": "Compose for a 16:9 full-screen frame. Use cinematic foreground, middle ground and background separation suitable for a restrained 2.5D push. Keep every face, hand and active narrative focus inside the central 82% safe area and the bottom 18% free of essential detail for subtitles. Cropping secondary architecture at the frame edge is allowed; never crop the active focus.",
+    "colorRule": "Render 90–95% of the frame in black, charcoal and warm gray. Use {accent} only on the single active narrative or emotional focal object; do not color whole costumes or backgrounds.",
     "isolationRule": "Show only characters and objects required by this beat. Large background calligraphy, subtitles, labels and exact title text will be added in code; generate none inside the illustration.",
 
     "characterRef": {
-      "useCase": "historical-scene",
-      "assetType": "Northern Song monochrome motion-comic",
+      "useCase": "monochrome-motion-comic",
+      "assetType": "source-context monochrome motion-comic",
       "inputImagesNote": "none; establish the requested original visual language",
-      "color": "almost entirely grayscale; reserve one muted vermilion accent for a small clothing fastener so identity remains trackable",
+      "color": "almost entirely grayscale; use one small muted vermilion identity detail only when the source supports it, otherwise remain fully grayscale",
       "needsStyleRefs": false
     },
 
     "scenePrompt": {
-      "useCase": "historical-scene",
+      "useCase": "monochrome-motion-comic",
       "inputImagesNote": "the fixed character sheet, when supplied, controls identity only",
       "createLine": "one concrete, immediately readable tableau for that sentence. Use the locked recurring protagonists whenever the current sentence requires them.",
-      "constraintsPrefix": "non-graphic historical suspense, no gore; period-accurate Northern Song clothing, architecture and objects; ",
-      "constraintsSuffix": "; no photorealism, glossy 3D, anime styling, modern props or watermark"
+      "constraintsPrefix": "non-graphic story scene; preserve the time period, setting, clothing, architecture and objects stated or clearly implied by the source; ",
+      "constraintsSuffix": "; no photorealism, glossy 3D, anime styling, anachronistic props or watermark"
     }
   },
 
   "essay": {
-    "styleLock": "minimalist Chinese diary comic reconstructed from the supplied reference video, pure white background, uneven black felt-tip pen outlines, naive wobbly proportions, rough dense black crayon scribbles for dark areas, sparse props, abundant negative space, selective muted wax-crayon color only, no realistic shading, no paper texture, no watermark",
+    "styleLock": "literary editorial watercolor and ink-wash illustration, visible brush texture, soft graphite accents, restrained paper grain, open composition, source-accurate time period and objects, muted nostalgic palette, no hard cartoon outlines, no photorealism, glossy 3D, anime styling, generated text or watermark",
     "exportSize": [1080, 1440],
     "ratio": "3:4",
     "width": 1080,
@@ -145,7 +145,7 @@
       "useCase": "essay-mood",
       "inputImagesNote": "none required; the supplied style frames establish the loose watercolor/ink-wash visual language only; ignore their people, composition and text",
       "createLine": "one atmospheric, emotionally resonant image that captures the mood and essence of the passage without illustrating it literally. Let the composition breathe. Use light, color temperature, and texture to carry the emotional weight. The text will tell the story; the image should make the viewer feel it.",
-      "constraintsPrefix": "warm personal memoir illustration, non-graphic; impressionistic watercolor or ink-wash style with visible brush texture; no hard outlines or cartoon linework; no photorealism, glossy 3D, anime styling, modern props or watermark; ",
+      "constraintsPrefix": "warm personal memoir illustration, non-graphic; impressionistic watercolor or ink-wash style with visible brush texture; no hard outlines or cartoon linework; preserve source-accurate modern or historical objects; no photorealism, glossy 3D, anime styling, anachronistic props or watermark; ",
       "constraintsSuffix": ""
     }
   }

@@ -32,11 +32,12 @@
     "audit:delivery": "python3 scripts/audit_story_delivery.py",
     "render:uploaded": "node scripts/render-picture.mjs --uploaded",
     "render:uploaded:preview": "node scripts/render-picture.mjs --uploaded --preview",
-    "check": "npm run check:types && npm run check:storyboard && npm run check:motion && npm run check:transitions",
+    "check": "npm run check:types && npm run check:storyboard && npm run check:motion && npm run check:transitions && npm run check:audio",
     "check:types": "tsc --noEmit",
     "check:storyboard": "node scripts/validate-storyboard.mjs storyboard.json",
     "check:motion": "node scripts/audit-motion-storyboard.mjs storyboard.json",
     "check:transitions": "node --test scripts/test-scene-transitions.mjs",
+    "check:audio": "python3 scripts/test_build_story_audio.py",
     "check:uploaded": "node scripts/validate-storyboard.mjs storyboard.uploaded.json"
   },
   "dependencies": {

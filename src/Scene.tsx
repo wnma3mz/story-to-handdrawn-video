@@ -49,7 +49,7 @@ export const Scene: React.FC<{scene: SceneData}> = ({scene}) => {
         <TextWipe
           text={scene.text}
           startFrame={0}
-          durationFrames={total}
+          durationFrames={at(0.14)}
           variant="essay"
         />
       </AbsoluteFill>

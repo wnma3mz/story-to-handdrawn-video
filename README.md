@@ -249,6 +249,14 @@ npm run render
 
 示例以温和女声 `zh-CN-XiaoxiaoNeural` 作为亲密叙事或寓言题材的起点，但这不是跨故事硬编码。`profile` 中的 `voice`、`rate`、`pitch` 和 `volume` 均可配置；更换故事类型、受众或叙述关系时，应重新用开篇和后半段样本做正常速度 A/B，再冻结该系列的声音配置。
 
+BGM 是选择项，不是默认项。仅在音乐能稳定情绪、补足长段留白且不会替代叙事时，将
+`background_music.enabled` 设为 `true` 并提供有授权的本地音频；信息密集、对白主导、
+需要真实环境声或刻意留白的段落应保持关闭。相对路径以配音配置文件所在目录为基准。
+启用后，音乐会循环至正文结束、自动淡入淡出，并由旁白侧链触发压低；封面标题声不铺
+音乐，避免开场争抢。建议从 `target_lufs=-28` 开始试听，不要靠提高旁白音量解决冲突。
+构建会同时保留纯旁白 `narration-master.wav` 和最终混音 `program-master.wav`，交付审计
+仍以纯旁白母带检查停顿与同步。
+
 ### 输出契约
 
 | 输入 | 模式 | 输出路径 |
@@ -259,6 +267,7 @@ npm run render
 | 上传图片 | 预览 | `out/<episode>/uploaded-preview.mp4` |
 | 封面 | 静态图 | `out/<episode>/cover.png` |
 | 配音 | 审片版 | `out/<episode>/voiced/preview.mp4` |
+| 音频 | 纯旁白 / 最终混音 | `out/<episode>/voiced/narration-master.wav` · `out/<episode>/voiced/program-master.wav` |
 | 配音 | 发布版 | `out/<episode>/voiced/release.mp4` · `out/releases/<episode>.mp4`（快查副本） |
 
 多集并发时必须同时隔离 episode 和 storyboard：
@@ -381,7 +390,7 @@ Preview first (720×960 for `diary`, 1280×720 for `ink-comic`, before committin
 使用 $story-to-handdrawn-video 先给这个故事生成一个预览版。
 ```
 
-Notes: one complete sentence per beat by default; Codex Image2 is the default image generator. For exact one-line-per-scene planning, pass `--scene-contract` with a consecutive `01..NN` visual plan covering every non-empty source line. Each entry must include a 1–3 line `caption` and `duration_sec` in `2..15`; without the flag, the established automatic sentence splitter remains active. Keep the full spoken thought in the source line and the shorter screen copy in `caption`. In `ink-comic`, freeze the final voiceover config and run `scripts/apply_verbatim_subtitles.py` before the final render so the bottom transcript matches the actual TTS; the shorter planning caption is retained only as `summary_text`. When an episode introduces only one new recurring character, pass a narrow brief with `--character-reference-prompt`; the broader `--character-lock` remains continuity context and no longer expands the reference-sheet cast. For parallel episodes, pair an episode-specific `--output` with its `--manifest` so later planning cannot redirect an earlier import. Preserve and inspect every untouched illustration original. If a semantic PASS has only a near-white generated field, `scripts/normalize-illustration-master.py` may perform whole-frame normalization, uniform downscale, and exact-white centering; it must never rescue a cropped, semantically wrong, or identity-leaking image, and the derivative must still pass `scripts/audit-illustration-masters.py`. Before import or preview, run `python3 scripts/audit_motion_timeline.py <timeline> --expected-duration <seconds>` and the renderer's storyboard validator. During planning only, `validate-storyboard.mjs --allow-missing-assets <storyboard>` checks structure before illustrations exist; omit that flag for every import, preview, and delivery gate. The audit deliberately accepts only the same seven motions as the renderer: `hold`, `push_soft`, `push_left`, `push_right`, `pull_soft`, `pan_left`, and `pan_right`. Approve the silent master first, then use `scripts/build_story_audio.py` with an episode config. Narration is synthesized as connected acts; VTT timestamps measure sync but never cut prose into sentence clips.
+Notes: one complete sentence per beat by default; Codex Image2 is the default image generator. For exact one-line-per-scene planning, pass `--scene-contract` with a consecutive `01..NN` visual plan covering every non-empty source line. Each entry must include a 1–3 line `caption` and `duration_sec` in `2..15`; without the flag, the established automatic sentence splitter remains active. Keep the full spoken thought in the source line and the shorter screen copy in `caption`. Procedural `code` plates are draft-only and require the explicit `--allow-code-plates` opt-in; final storyboards should use semantically reviewed raster or SVG artwork. In `ink-comic`, freeze the final voiceover config and run `scripts/apply_verbatim_subtitles.py` before the final render so the bottom transcript matches the actual TTS; the shorter planning caption is retained only as `summary_text`. When an episode introduces only one new recurring character, pass a narrow brief with `--character-reference-prompt`; the broader `--character-lock` remains continuity context and no longer expands the reference-sheet cast. For parallel episodes, pair an episode-specific `--output` with its `--manifest` so later planning cannot redirect an earlier import. Preserve and inspect every untouched illustration original. If a semantic PASS has only a near-white generated field, `scripts/normalize-illustration-master.py` may perform whole-frame normalization, uniform downscale, and exact-white centering; it must never rescue a cropped, semantically wrong, or identity-leaking image, and the derivative must still pass `scripts/audit-illustration-masters.py`. Before import or preview, run `python3 scripts/audit_motion_timeline.py <timeline> --expected-duration <seconds>` and the renderer's storyboard validator. During planning only, `validate-storyboard.mjs --allow-missing-assets <storyboard>` checks structure before illustrations exist; omit that flag for every import, preview, and delivery gate. The audit deliberately accepts only the same seven motions as the renderer: `hold`, `push_soft`, `push_left`, `push_right`, `pull_soft`, `pan_left`, and `pan_right`. Approve the silent master first, then use `scripts/build_story_audio.py` with an episode config. Narration is synthesized as connected acts; VTT timestamps measure sync but never cut prose into sentence clips.
 
 Use `--jobs 4` for independent image import and connected-group TTS work. The generated Codex manifest declares a dependency graph: reference jobs run first, then scene jobs may run in parallel. Per-episode Remotion rendering remains at `concurrency=1`; parallelize isolated episodes instead. `npm run release -- ...` builds one audited release, while `npm run release:batch -- examples/batch.example.json --jobs 2` runs isolated episodes concurrently. Rendering stages only assets referenced by the selected storyboard under `.work/render/`.
 

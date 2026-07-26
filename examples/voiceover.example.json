@@ -27,6 +27,19 @@
     "duration_sec": 2.7,
     "title_audio_text": "故事标题"
   },
+  "background_music": {
+    "enabled": false,
+    "path": "./music/quiet-ambient.mp3",
+    "target_lufs": -28.0,
+    "fade_in_sec": 1.2,
+    "fade_out_sec": 2.0,
+    "ducking": {
+      "threshold_db": -32.0,
+      "ratio": 8.0,
+      "attack_ms": 25.0,
+      "release_ms": 450.0
+    }
+  },
   "mastering": {
     "integrated_lufs": -16.0,
     "true_peak_dbtp": -1.5,

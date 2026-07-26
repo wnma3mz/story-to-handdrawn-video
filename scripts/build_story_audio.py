@@ -143,6 +143,110 @@ def loudnorm_filter(path: Path, mastering: dict) -> str:
     )
 
 
+def resolve_background_music(config: dict, config_path: Path) -> dict | None:
+    music = config.get("background_music", {})
+    if not music or not music.get("enabled", False):
+        return None
+
+    source_value = str(music.get("path", "")).strip()
+    if not source_value:
+        raise ValueError("background_music.path is required when BGM is enabled")
+    source = Path(source_value).expanduser()
+    if not source.is_absolute():
+        source = (config_path.parent / source).resolve()
+    if not source.is_file():
+        raise ValueError(f"background_music.path does not exist: {source}")
+
+    target_lufs = float(music.get("target_lufs", -28.0))
+    if not -36.0 <= target_lufs <= -20.0:
+        raise ValueError("background_music.target_lufs must stay within -36..-20")
+    fade_in_sec = float(music.get("fade_in_sec", 1.2))
+    fade_out_sec = float(music.get("fade_out_sec", 2.0))
+    if not 0.0 <= fade_in_sec <= 10.0:
+        raise ValueError("background_music.fade_in_sec must stay within 0..10")
+    if not 0.0 <= fade_out_sec <= 10.0:
+        raise ValueError("background_music.fade_out_sec must stay within 0..10")
+
+    ducking = music.get("ducking", {})
+    threshold_db = float(ducking.get("threshold_db", -32.0))
+    ratio = float(ducking.get("ratio", 8.0))
+    attack_ms = float(ducking.get("attack_ms", 25.0))
+    release_ms = float(ducking.get("release_ms", 450.0))
+    if not -48.0 <= threshold_db <= -12.0:
+        raise ValueError("background_music.ducking.threshold_db must stay within -48..-12")
+    if not 2.0 <= ratio <= 20.0:
+        raise ValueError("background_music.ducking.ratio must stay within 2..20")
+    if not 1.0 <= attack_ms <= 200.0:
+        raise ValueError("background_music.ducking.attack_ms must stay within 1..200")
+    if not 50.0 <= release_ms <= 2000.0:
+        raise ValueError("background_music.ducking.release_ms must stay within 50..2000")
+
+    return {
+        "path": source,
+        "target_lufs": target_lufs,
+        "fade_in_sec": fade_in_sec,
+        "fade_out_sec": fade_out_sec,
+        "threshold": 10 ** (threshold_db / 20.0),
+        "threshold_db": threshold_db,
+        "ratio": ratio,
+        "attack_ms": attack_ms,
+        "release_ms": release_ms,
+    }
+
+
+def build_program_master(
+    narration_master: Path,
+    program_master: Path,
+    total_sec: float,
+    music: dict | None,
+) -> None:
+    if music is None:
+        shutil.copyfile(narration_master, program_master)
+        return
+
+    fade_out_start = max(0.0, total_sec - music["fade_out_sec"])
+    bed_filters = [
+        "aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo",
+        (
+            f"loudnorm=I={music['target_lufs']}:TP=-3:LRA=11"
+        ),
+        f"atrim=duration={total_sec:.6f}",
+        "asetpts=PTS-STARTPTS",
+    ]
+    if music["fade_in_sec"] > 0:
+        bed_filters.append(
+            f"afade=t=in:st=0:d={min(music['fade_in_sec'], total_sec):.6f}"
+        )
+    if music["fade_out_sec"] > 0:
+        bed_filters.append(
+            f"afade=t=out:st={fade_out_start:.6f}:"
+            f"d={min(music['fade_out_sec'], total_sec):.6f}"
+        )
+    filter_complex = ";".join([
+        (
+            "[0:a]aformat=sample_fmts=fltp:sample_rates=48000:"
+            "channel_layouts=stereo[narration]"
+        ),
+        f"[1:a]{','.join(bed_filters)}[bed]",
+        (
+            f"[bed][narration]sidechaincompress=threshold={music['threshold']:.8f}:"
+            f"ratio={music['ratio']:.3f}:attack={music['attack_ms']:.3f}:"
+            f"release={music['release_ms']:.3f}[ducked]"
+        ),
+        (
+            "[narration][ducked]amix=inputs=2:normalize=0:dropout_transition=0,"
+            f"apad=whole_dur={total_sec:.6f},atrim=duration={total_sec:.6f},"
+            "alimiter=limit=0.891251[program]"
+        ),
+    ])
+    run([
+        "ffmpeg", "-y", "-v", "error", "-i", str(narration_master),
+        "-stream_loop", "-1", "-i", str(music["path"]),
+        "-filter_complex", filter_complex, "-map", "[program]",
+        "-ar", "48000", "-ac", "2", "-c:a", "pcm_s24le", str(program_master),
+    ])
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--storyboard", type=Path, default=Path("storyboard.json"))
@@ -181,6 +285,7 @@ def main() -> int:
     config = json.loads(args.config.read_text(encoding="utf-8"))
     profile = config["profile"]
     continuity = config["continuity"]
+    background_music = resolve_background_music(config, args.config.resolve())
     if not continuity.get("groups"):
         raise ValueError("continuity.groups must contain at least one narration group")
 
@@ -428,10 +533,12 @@ def main() -> int:
         loudnorm_filter(unmastered, config.get("mastering", {})),
         "-ar", "48000", "-ac", "1", "-c:a", "pcm_s24le", str(master),
     ])
+    program_master = output / "program-master.wav"
+    build_program_master(master, program_master, total, background_music)
 
     voiced = output / "preview.mp4"
     run([
-        "ffmpeg", "-y", "-v", "error", "-i", str(args.picture), "-i", str(master),
+        "ffmpeg", "-y", "-v", "error", "-i", str(args.picture), "-i", str(program_master),
         "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
         "-ar", "48000", "-ac", "2", str(voiced),
     ])
@@ -485,7 +592,8 @@ def main() -> int:
     ])
     run([
         "ffmpeg", "-y", "-v", "error", "-loop", "1", "-framerate", str(fps),
-        "-i", str(args.cover), "-i", str(args.picture), "-i", str(title_trimmed), "-i", str(master),
+        "-i", str(args.cover), "-i", str(args.picture), "-i", str(title_trimmed),
+        "-i", str(program_master),
         "-filter_complex", filter_complex, "-map", "[v]", "-map", "[a]",
         "-c:v", "libx264", "-crf", "18", "-preset", "fast", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
@@ -514,6 +622,24 @@ def main() -> int:
         "groups": group_rows,
         "total_sec": total,
         "master": str(master.resolve()),
+        "program_master": str(program_master.resolve()),
+        "background_music": (
+            {
+                "enabled": True,
+                "path": str(background_music["path"]),
+                "target_lufs": background_music["target_lufs"],
+                "fade_in_sec": background_music["fade_in_sec"],
+                "fade_out_sec": background_music["fade_out_sec"],
+                "ducking": {
+                    "threshold_db": background_music["threshold_db"],
+                    "ratio": background_music["ratio"],
+                    "attack_ms": background_music["attack_ms"],
+                    "release_ms": background_music["release_ms"],
+                },
+            }
+            if background_music is not None
+            else {"enabled": False}
+        ),
         "voiced_video": str(voiced.resolve()),
         "release_video": str(release.resolve()),
     }

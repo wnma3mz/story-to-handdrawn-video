@@ -412,6 +412,12 @@ for (let index = 0; index < storyParts.length; index += 1) {
       : structuredVisualPlan.svg
         ? 'svg'
         : 'raster';
+  if (plateMode === 'code' && args['allow-code-plates'] !== true) {
+    throw new Error(
+      `${id}: plate_mode=code requires explicit --allow-code-plates; ` +
+        'procedural motifs are draft-only and must not enter a final storyboard accidentally',
+    );
+  }
   let codePlate = null;
   let svgAsset = null;
   if (plateMode === 'code') {
@@ -654,7 +660,7 @@ note: no Image2 master; renderer draws this plate in code or loads the static SV
       : visualMode === 'essay'
       ? '柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上'
       : visualMode === 'ink-comic'
-        ? `全画面黑白灰，仅用 ${accent} 强调一个关键证物或情绪焦点`
+        ? `全画面黑白灰，仅用 ${accent} 强调一个关键对象或情绪焦点`
         : '仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白',
     detail_hint: null,
     assets: {

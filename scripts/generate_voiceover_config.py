@@ -150,6 +150,19 @@ def main() -> int:
             "duration_sec": args.cover_duration_sec,
             "title_audio_text": storyboard["project"]["title"],
         },
+        "background_music": {
+            "enabled": False,
+            "path": "",
+            "target_lufs": -28.0,
+            "fade_in_sec": 1.2,
+            "fade_out_sec": 2.0,
+            "ducking": {
+                "threshold_db": -32.0,
+                "ratio": 8.0,
+                "attack_ms": 25.0,
+                "release_ms": 450.0,
+            },
+        },
         "mastering": {
             "integrated_lufs": -16.0,
             "true_peak_dbtp": -1.5,
@@ -175,6 +188,7 @@ def main() -> int:
     print("  - whole_group_tempo per group")
     print("  - profile.voice, rate, pitch, volume")
     print("  - cover.title_audio_text and duration_sec")
+    print("  - background_music (leave enabled=false unless the story benefits)")
     return 0
 
 

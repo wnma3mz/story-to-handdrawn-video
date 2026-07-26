@@ -64,7 +64,7 @@ export const TextWipe: React.FC<TextWipeProps> = ({
           bottom: 420,
           display: 'flex',
           alignItems: 'flex-start',
-          clipPath: `inset(0 0 ${(1 - progress) * 100}% 0)`,
+          opacity: progress,
         }}
       >
         <p

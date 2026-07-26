@@ -57,7 +57,7 @@ const InkComicCover: React.FC = () => {
           color: '#D8D2C8',
         }}
       >
-        {cover.series_title || '清明上河图谜案 · 动态漫'}
+        {cover.series_title || '黑白故事 · 动态漫'}
       </div>
       <div
         style={{
@@ -70,7 +70,7 @@ const InkComicCover: React.FC = () => {
         }}
       >
         <div style={{fontSize: 52, color: '#CFC7B9', marginBottom: 16}}>
-          {cover.episode_label || '第五季 · 风篇'}
+          {cover.episode_label || '故事篇章'}
         </div>
         <div
           style={{
@@ -86,26 +86,6 @@ const InkComicCover: React.FC = () => {
             </div>
           ))}
         </div>
-      </div>
-      <div
-        style={{
-          position: 'absolute',
-          right: 94,
-          bottom: 64,
-          width: 116,
-          height: 116,
-          borderRadius: 12,
-          backgroundColor: accent,
-          color: '#F7EFE2',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 66,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.36)',
-          transform: 'rotate(-3deg)',
-        }}
-      >
-        田
       </div>
     </AbsoluteFill>
   );
@@ -325,12 +305,11 @@ export const EpisodeCover: React.FC = () => {
   const titleFontSize =
     longestTitleLine <= 8 ? 102 : Math.max(58, Math.floor(800 / longestTitleLine));
   const firstScene = storyboard.scenes[0];
-  const episodeNumber = String(
+  const rawEpisodeNumber =
     cover.episode_number ||
-      chapter.match(/\d+/)?.[0] ||
-      chineseChapterNumber(chapter) ||
-      1,
-  );
+    chapter.match(/\d+/)?.[0] ||
+    chineseChapterNumber(chapter);
+  const episodeNumber = rawEpisodeNumber ? String(rawEpisodeNumber) : null;
   const colors = {
     background: cover.background || '#5E7468',
     accent: cover.accent || '#D5A95F',
@@ -388,23 +367,25 @@ export const EpisodeCover: React.FC = () => {
         <div style={{fontSize: 39, letterSpacing: '0.08em'}}>
           {cover.series_title || '手绘故事 · 动画'}
         </div>
-        <div
-          style={{
-            width: 112,
-            height: 112,
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: colors.badge,
-            border: '5px solid #282D29',
-            color: colors.foreground,
-            fontSize: 48,
-            transform: 'rotate(4deg)',
-          }}
-        >
-          {episodeNumber.padStart(2, '0')}
-        </div>
+        {episodeNumber ? (
+          <div
+            style={{
+              width: 112,
+              height: 112,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.badge,
+              border: '5px solid #282D29',
+              color: colors.foreground,
+              fontSize: 48,
+              transform: 'rotate(4deg)',
+            }}
+          >
+            {episodeNumber.padStart(2, '0')}
+          </div>
+        ) : null}
       </div>
 
       <div

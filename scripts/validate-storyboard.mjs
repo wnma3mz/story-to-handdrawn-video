@@ -147,8 +147,11 @@ const validate = (file) => {
     }
     if (typeof scene.text !== 'string') {
       errors.push(`${label}: text must be a string`);
-    } else if ([...scene.text.replace(/\s/g, '')].length > (project.visual_mode === 'ink-comic' ? 72 : 45)) {
-      errors.push(`${label}: text exceeds ${project.visual_mode === 'ink-comic' ? 72 : 45} characters`);
+    } else {
+      const textLimit = ['essay', 'ink-comic'].includes(project.visual_mode) ? 72 : 45;
+      if ([...scene.text.replace(/\s/g, '')].length > textLimit) {
+        errors.push(`${label}: text exceeds ${textLimit} characters`);
+      }
     }
     if (project.subtitle_contract === 'verbatim_tts') {
       const normalizedText = String(scene.text || '').replace(/\s/g, '');
