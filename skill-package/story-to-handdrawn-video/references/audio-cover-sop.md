@@ -85,6 +85,16 @@ House defaults:
 
 Apply filtering, compression, and loudness processing consistently to the whole narration timeline. For the no-cover voiced master, copy the approved picture stream when possible. Do not end that mux with FFmpeg `-shortest`: a sub-frame audio/picture rounding difference can otherwise discard the final video packet. Let the complete picture stream determine the container duration, and keep the narration-master duration difference within 50 ms.
 
+Treat the rendered video's frame-locked duration (`video_frames / fps`) as the delivery truth. A narration master built from decimal shot durations can drift beyond 50 ms because the renderer rounds shots to whole frames. If that happens:
+
+1. Measure the final video frame count and narration duration; do not infer either from the storyboard sum.
+2. Run silence detection on the narration tail. Correct the mismatch only when the entire removed interval lies inside an approved final-silence tail and the remaining tail still meets the configured minimum.
+3. Derive a new frame-locked narration master by trimming only that terminal silence. Do not overwrite the approved source master, stretch the full waveform, change group starts, or cut speech.
+4. Record source and derivative hashes, durations, removed interval, remaining tail, loudness, true peak, and `speech_audio_retimed=false`.
+5. Mux without `-shortest`, prove the copied video elementary stream matches the silent master, and require the no-cover container duration to equal the frame-locked picture duration.
+
+If the mismatch reaches speech or would leave too little final tail, reject the assembly and retime the storyboard or regenerate continuous narration against the frame timeline.
+
 ## Acceptance gates
 
 ### Editorial shots versus subtitle scenes
