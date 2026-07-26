@@ -99,6 +99,8 @@ If the correction would reach speech, leave too little final tail, or create a f
 
 ## Acceptance gates
 
+When cover approval is a separate human gate, use `scripts/build-audible-cover-candidate.py` with the episode config, approved cover still, a new versioned output directory, and repeated `--protect` paths for immutable inputs. It produces only the whole-title PCM master, gently moving audible cover candidate, and technical QC. If the natural title plus head and clean tail does not fit, it may extend the cover to the next whole frame; it must not time-compress or truncate the title. Technical PASS remains `human_listen=PENDING` and `release_assembled=false`. Use the exact approved candidate hash for later release assembly.
+
 ### Editorial shots versus subtitle scenes
 
 An editorial shot may support more than one terminally punctuated narration sentence. Keep the illustration as one visual interval, but compile one machine scene per actual TTS/VTT cue so every subtitle is verbatim and semantically timed. Reuse the same asset across those machine scenes, carry a single normalized motion path from 0 to 1 over the full interval, and suppress repeated image fades. A subtitle change must not restart the camera move or flash the image.
