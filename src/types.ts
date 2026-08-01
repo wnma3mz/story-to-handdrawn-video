@@ -4,6 +4,7 @@ export type LayerId = 'text' | 'bw_full' | 'detail' | 'color';
 
 export type VisualMode = 'diary' | 'ink-comic' | 'essay';
 export type MotionId = keyof typeof motionProfiles;
+export type ColorGrade = 'monochrome' | 'warm_bronze' | 'snow_cinnabar';
 
 /**
  * How the illustration plate is produced for a scene.
@@ -43,6 +44,7 @@ export type SceneData = {
   visual_interval_progress_start?: number;
   visual_interval_progress_end?: number;
   visual_mode?: VisualMode;
+  color_grade?: ColorGrade;
   /**
    * Illustration plate source. Defaults to raster when assets.color is set,
    * svg when assets.svg is set, code when code_plate is set.
@@ -81,6 +83,13 @@ export type Storyboard = {
     gen_size?: number;
     export_size?: [number, number];
     visual_mode?: VisualMode;
+    color_grade?: ColorGrade;
+    style_profile?: {
+      id: string;
+      path: string;
+      schema_version: 1;
+    };
+    accent?: string;
     subtitle_contract?: 'draft_summary' | 'verbatim_tts';
     ratio: '3:4' | '16:9';
     width: number;

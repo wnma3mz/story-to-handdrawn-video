@@ -14,7 +14,8 @@ import {TextWipe} from './TextWipe';
 import type {SceneData} from './types';
 
 export const Scene: React.FC<{scene: SceneData}> = ({scene}) => {
-  const {fps} = useVideoConfig();
+  const {fps, width, height} = useVideoConfig();
+  const portrait = height > width;
   const frame = useCurrentFrame();
   const total = Math.round(scene.duration_sec * fps);
   const at = (ratio: number) => Math.round(total * ratio);
@@ -30,8 +31,6 @@ export const Scene: React.FC<{scene: SceneData}> = ({scene}) => {
   }
 
   if (scene.visual_mode === 'essay') {
-    const colorFadeIn = Math.round(total * 0.18);
-    const colorOpacity = Math.min(1, Math.max(0, frame / Math.max(1, colorFadeIn)));
     return (
       <AbsoluteFill style={{backgroundColor: '#FCFAF5', overflow: 'hidden'}}>
         <MotionStage scene={scene}>
@@ -39,10 +38,13 @@ export const Scene: React.FC<{scene: SceneData}> = ({scene}) => {
             style={{
               position: 'absolute',
               inset: 0,
-              opacity: colorOpacity,
+              // Scene-to-scene fades are owned by the transition layer.
+              // Keeping the plate opaque prevents declared cuts from
+              // collapsing into a near-white disappear/restart interval.
+              opacity: 1,
             }}
           >
-            <ScenePlate scene={scene} objectFit="contain" />
+            <ScenePlate scene={scene} objectFit={portrait ? 'cover' : 'contain'} />
           </div>
         </MotionStage>
 
@@ -82,6 +84,25 @@ export const Scene: React.FC<{scene: SceneData}> = ({scene}) => {
           <div style={{position: 'absolute', inset: 0, opacity}}>
             <ScenePlate scene={scene} objectFit="contain" />
           </div>
+        </MotionStage>
+        <TextWipe
+          text={scene.text}
+          textAsset={scene.assets.text_image}
+          startFrame={0}
+          durationFrames={at(speedMode ? 0.22 : 0.16)}
+        />
+      </AbsoluteFill>
+    );
+  }
+
+  // A continued visual interval reuses the preceding scene's plate and motion.
+  // By this point the first scene has completed its bw→color reveal, so keep
+  // the color plate fully visible instead of restarting the reveal on the cut.
+  if (scene.visual_interval_start === false) {
+    return (
+      <AbsoluteFill style={{backgroundColor: '#FFFFFF', overflow: 'hidden'}}>
+        <MotionStage scene={scene}>
+          <ScenePlate scene={scene} objectFit={portrait ? 'cover' : 'contain'} />
         </MotionStage>
         <TextWipe
           text={scene.text}

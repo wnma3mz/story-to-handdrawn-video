@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "id": "zhengding-blueprint",
+  "display_name": "纸上府邸营造志",
+  "description": "让小说线稿、八十年代电视美术稿、建筑蓝图和县城生活速写逐层套印，展示一座虚构府邸如何变成真实城市的生计。",
+  "base_mode": "diary",
+  "recommended_for": [
+    "城市更新与文旅产业",
+    "影视建筑和幕后营造",
+    "虚构作品进入现实空间的故事",
+    "传统地方饮食与社区记忆"
+  ],
+  "style_overrides": {
+    "styleLock": "八十年代电视美术设计稿与手绘建筑蓝图融合的纪实画册：铅笔结构线、蓝晒底图、砖红水彩和旧电视颗粒并存，建筑从半透明线框逐渐成为有生活痕迹的实体；人物像现场速写，朴素而具体。所有段落保持同一套纸张、制图线宽和略微褪色的年代色。",
+    "compositionRule": "优先使用建筑剖面、轴测图和施工现场的斜俯视构图，让纸上平面、搭建过程与开放后的街巷在同一机位中渐变；人物群像沿院落动线分布，保留门洞、回廊作为自然画框。八大碗段落改用桌面俯视和后厨横剖面，但继续保留蓝图底线以维持统一。",
+    "colorRule": "蓝晒底色#54758A、图纸浅蓝#B8C9CC、铅笔灰#555856与旧纸白#E7E1D2构成基础；砖墙和地方烟火使用砖红#A54E3F，木构暗部使用栗褐#5D4036，生活亮点以灶火橙#D17A42点到为止。禁止数码高饱和蓝和旅游宣传片式大红大金。",
+    "isolationRule": "建筑轮廓、施工构件和人物动线必须清楚，透视关系可读；人物不得与柱廊或屋檐粘连，群像采用前中后层级而非无序堆叠。涉及食物时，每道菜保持独立器皿和真实结构，不将食材融成模糊色块。",
+    "characterRef": {
+      "useCase": "production-design-documentary",
+      "assetType": "1980s Chinese television production-design sketch",
+      "inputImagesNote": "none; establish the requested original blueprint-and-location-sketch visual language",
+      "color": "blueprint blue, graphite gray, faded brick red, chestnut brown, and restrained stove orange on aged drafting paper",
+      "needsStyleRefs": false
+    },
+    "scenePrompt": {
+      "useCase": "production-design-documentary",
+      "inputImagesNote": "the fixed character sheet, when supplied, controls identity only; use no bundled diary-comic style reference",
+      "needsStyleRefs": false,
+      "createLine": "创作一页八十年代电视美术稿式的城市营造纪实画面，让小说中的府邸从铅笔蓝图逐步变成有人工作、游览和吃饭的真实空间。",
+      "constraintsPrefix": "严格保持纸上府邸营造志风格：铅笔结构线、蓝晒图、砖红水彩、旧电视颗粒、轴测或剖面构图、朴素现场速写人物；准确表现指定年代的县城街景、施工方式、建筑形制、服饰道具与地方饮食。",
+      "constraintsSuffix": "画面中不得生成任何文字、图纸标注、尺寸数字、书法、匾额内容、招牌、字幕、logo、水印或界面元素；不得出现现代高楼、智能手机、现代施工机械闯入八十年代场景，也不得混用错误朝代建筑服饰；避免摄影写实、旅游海报和过度整洁的影视棚效果。"
+    }
+  },
+  "episode_defaults": {
+    "accent": "#A54E3F",
+    "cover": {
+      "background": "#B8C9CC",
+      "accent": "#A54E3F",
+      "dark_accent": "#354A55"
+    }
+  },
+  "editorial": {
+    "aspect_ratio": "3:4",
+    "target_duration_sec": 285,
+    "target_narration_chars": [
+      1050,
+      1450
+    ],
+    "visual_motifs": [
+      "铅笔画出的院落线框逐层变成砖木实体",
+      "门洞框住演员、工匠、摊贩和游客的接力",
+      "八十年代摄像机旁摊开的美术稿",
+      "府邸轴测图向县城街巷延伸成产业链",
+      "八大碗蒸汽覆盖蓝图又露出普通人的饭桌"
+    ],
+    "avoid": [
+      "把荣国府画成真实清代皇宫",
+      "一味怀旧而忽略产业和普通人",
+      "旅游宣传片式整洁空镜",
+      "食物段落突然切换成不相干的美食摄影",
+      "用画内标注和匾额文字传递信息"
+    ],
+    "motion_preferences": [
+      "从蓝图线框到实景水彩做同机位渐显",
+      "沿回廊和门洞缓慢推进，保持建筑尺度",
+      "用卷尺、铅笔线和砖块落位形成施工节奏",
+      "八大碗以蒸汽和桌面圆形做柔和转场"
+    ],
+    "narration_tone": "有人情味的城市纪实口吻，尊重笨功夫和普通人的选择，也清楚指出虚构、传说与真实生计之间的距离。"
+  }
+}

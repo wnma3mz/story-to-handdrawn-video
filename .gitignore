@@ -3,6 +3,7 @@ build/
 out/
 .work/
 episodes/
+review_ready/
 release/
 public/assets/generated/
 prompts/generated/

@@ -1,4 +1,4 @@
 interface:
   display_name: "故事转手绘与历史动态漫"
-  short_description: "把故事制成3:4手绘日记或16:9黑白历史动态漫成片"
-  default_prompt: "使用 $story-to-handdrawn-video 把这段故事制作成带连续配音和有声封面的16:9黑白历史动态漫。"
+  short_description: "把故事制成3:4竖屏手绘动画成片，并将产物留在任务目录"
+  default_prompt: "使用 $story-to-handdrawn-video 把这段故事制作成带连续配音和有声封面的3:4竖屏手绘动画；将所有任务素材、缓存和成片写入调用方工作目录。"

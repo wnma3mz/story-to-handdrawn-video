@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "id": "indigo-pearl-woodcut",
+  "display_name": "靛海采珠木刻",
+  "description": "用海上木刻的粗线与靛蓝水墨讲述采珠人的下潜、绳索、户籍与迁徙。白色珍珠始终是画面中最小却最亮的点，腰绳既是救命绳也是束缚线。适合海洋劳作史、贡赋制度、资源耗竭与技术解放主题。",
+  "base_mode": "ink-comic",
+  "recommended_for": [
+    "海洋劳作与失传职业",
+    "贡赋、徭役和身份制度",
+    "资源开采与生态迁徙",
+    "技术改变劳动处境",
+    "以自然物反照人的历史"
+  ],
+  "style_overrides": {
+    "styleLock": "Indigo-dyed maritime woodcut with bold hand-carved wave marks, rough black keylines, absorbent rice-paper edges, sparse shell-white highlights, muted rope-red accents, documentary human scale, layered Chinese ink wash under carved relief texture.",
+    "compositionRule": "Let the horizon divide surface power from underwater labor. Repeat a vertical rope connecting boat, diver, basket, seabed, and unseen authority. Use fleets as patterned silhouettes, divers as vulnerable small figures, and pearls as rare isolated white points. When the story reaches cultured pearls, simplify the violent wave cuts into calmer grids of shallow-water baskets without turning the scene into modern advertising.",
+    "colorRule": "Dominant deep indigo and blue-black with paper-beige foam and shell-white pearls. Rope red marks human coercion, injury risk, edicts, or boundaries but must remain thin and muted. Later technology may add a restrained sea-green, while the pearl remains the brightest element.",
+    "isolationRule": "Separate depth layers with carved wave bands, fading ink density, rope diagonals, and pockets of unprinted paper. Keep silhouettes readable against the sea. Avoid photorealistic underwater gradients, tropical postcard color, decorative chinoiserie, and generic pirate imagery.",
+    "scenePrompt": {
+      "createLine": "Create a hand-carved indigo maritime woodcut on absorbent paper, showing one historically grounded labor action through bold wave marks, a continuous rope motif, vulnerable human scale, rare shell-white pearl highlights, and sober documentary emotion.",
+      "constraintsPrefix": "Match the material culture to the narrated Chinese period, especially Ming-era small working boats, simple cotton or hemp clothing, wicker baskets, rope, shellfish, historical nose-and-mouth breathing tube descriptions, coastal settlements, or clearly differentiated late nineteenth- and twentieth-century pearl-culture equipment when the timeline changes.",
+      "constraintsSuffix": "No words, Chinese characters, letters, numerals, captions, signs, labels, logo, signature, watermark, readable edicts, fantasy sea monsters, mermaids, pirate costume, modern scuba tanks in premodern scenes, neoprene suits in premodern scenes, diesel ships in Ming scenes, imperial dragon-pageant clichés, exposed entrails, explicit drowning bodies, open wounds, splatter, or excessive blood."
+    }
+  },
+  "episode_defaults": {
+    "accent": "#8B3E38",
+    "cover": {
+      "background": "#E7DDC8",
+      "accent": "#1D4E67",
+      "dark_accent": "#10283A"
+    }
+  },
+  "editorial": {
+    "aspect_ratio": "3:4",
+    "target_duration_sec": 270,
+    "target_narration_chars": [
+      1150,
+      1600
+    ],
+    "visual_motifs": [
+      "从船舷垂到海底的腰绳",
+      "靛蓝浪层中的微小白珠",
+      "八百艘船形成的冷峻重复纹样",
+      "呼吸管、竹篮、毛毡和空蚌壳",
+      "珠贝迁徙与人被困岸外的反向运动"
+    ],
+    "avoid": [
+      "把疍民浪漫化为自由渔歌生活",
+      "用溺亡特写消费苦难",
+      "把所有朝代混成同一种古装",
+      "珍珠广告式的光泽和奢华陈列",
+      "让木刻纹理遮住关键人物动作"
+    ],
+    "motion_preferences": [
+      "顺腰绳从船面垂直下潜到海底",
+      "让波纹和刻线作缓慢视差而非真实水模拟",
+      "以白珠在深蓝画面中的位移串联章节",
+      "珠贝迁徙时横向移动，人群保持被绳索固定",
+      "结尾由狂乱波纹渐变为平静养殖笼网格"
+    ],
+    "narration_tone": "沉静、清醒、有海水压力感；以劳动细节和制度反差推进，不替苦难加抒情滤镜，结尾给技术变迁留出克制的亮色。"
+  }
+}

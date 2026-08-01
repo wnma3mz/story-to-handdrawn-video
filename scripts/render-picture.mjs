@@ -2,19 +2,36 @@ import {execFileSync} from 'node:child_process';
 import {existsSync, mkdirSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {resolveWorkspace, resolveWorkspacePath} from './lib/workspace.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const valueFor = (flag) => {
   const index = args.indexOf(flag);
-  return index >= 0 ? args[index + 1] : undefined;
+  const value = index >= 0 ? args[index + 1] : undefined;
+  return value && !value.startsWith('--') ? value : undefined;
 };
+for (const flag of ['--workspace', '--output-root', '--work-root', '--asset-root']) {
+  if (args.includes(flag) && !valueFor(flag)) {
+    throw new Error(`${flag} requires a directory path`);
+  }
+}
+const parsedArgs = Object.fromEntries(
+  ['workspace', 'output-root', 'work-root', 'asset-root'].flatMap((key) => {
+    const value = valueFor(`--${key}`);
+    return value ? [[key, value]] : [];
+  }),
+);
+const workspace = resolveWorkspace(parsedArgs, root);
 const episode = valueFor('--episode') || process.env.EPISODE || 'default';
+if (!/^[\p{Letter}\p{Number}._-]+$/u.test(episode) || episode === '.' || episode === '..') {
+  throw new Error('--episode may contain only letters, numbers, dots, underscores, and hyphens');
+}
 const isPreview = args.includes('--preview');
 const isCover = args.includes('--cover');
 const isUploaded = args.includes('--uploaded');
 const storyboardPath = resolve(
-  root,
+  workspace,
   valueFor('--storyboard') ||
     process.env.STORYBOARD_PATH ||
     (isUploaded ? 'storyboard.uploaded.json' : 'storyboard.json'),
@@ -22,9 +39,12 @@ const storyboardPath = resolve(
 if (!existsSync(storyboardPath)) {
   throw new Error(`Missing storyboard: ${storyboardPath}`);
 }
-const outDir = `out/${episode}`;
+const outputRoot = resolveWorkspacePath(workspace, parsedArgs['output-root'], 'out');
+const workRoot = resolveWorkspacePath(workspace, parsedArgs['work-root'], '.work');
+const assetRoot = resolveWorkspacePath(workspace, parsedArgs['asset-root'], 'public');
+const outDir = resolve(outputRoot, episode);
 
-mkdirSync('out/releases', {recursive: true});
+mkdirSync(resolve(outputRoot, 'releases'), {recursive: true});
 mkdirSync(outDir, {recursive: true});
 
 const stagedPublic = execFileSync(
@@ -37,6 +57,10 @@ const stagedPublic = execFileSync(
     isUploaded ? 'uploaded' : isCover ? 'cover' : isPreview ? 'preview' : 'main',
     '--storyboard',
     storyboardPath,
+    '--asset-root',
+    assetRoot,
+    '--work-root',
+    workRoot,
   ],
   {cwd: root, encoding: 'utf8'},
 ).trim();
@@ -51,7 +75,7 @@ const renderEnvironment = {
 if (isCover) {
   execFileSync(
     'npx',
-    ['remotion', 'still', 'src/index.ts', 'EpisodeCover', `${outDir}/cover.png`],
+    ['remotion', 'still', 'src/index.ts', 'EpisodeCover', resolve(outDir, 'cover.png')],
     {cwd: root, env: renderEnvironment, stdio: 'inherit'},
   );
 } else if (isUploaded) {
@@ -62,7 +86,7 @@ if (isCover) {
     'npx',
     [
       'remotion', 'render', 'src/index.ts', 'UploadedPictureSilent',
-      `${outDir}/${name}.mp4`,
+      resolve(outDir, `${name}.mp4`),
       '--codec=h264', `--crf=${crf}`, '--pixel-format=yuv420p', '--muted',
       '--concurrency=1', ...scaleArg,
     ],
@@ -76,7 +100,7 @@ if (isCover) {
     'npx',
     [
       'remotion', 'render', 'src/index.ts', 'PictureSilent',
-      `${outDir}/${name}.mp4`,
+      resolve(outDir, `${name}.mp4`),
       '--codec=h264', `--crf=${crf}`, '--pixel-format=yuv420p', '--muted',
       '--concurrency=1', ...scaleArg,
     ],

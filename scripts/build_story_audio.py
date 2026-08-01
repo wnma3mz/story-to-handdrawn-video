@@ -15,9 +15,12 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+
+from story_timeline import compute_scene_timeline
 
 
 def run(command: list[str], *, attempts: int = 1) -> subprocess.CompletedProcess[str]:
@@ -84,25 +87,157 @@ def parse_vtt(path: Path) -> list[dict]:
     return cues
 
 
-def synthesize(text: str, media: Path, subtitles: Path, profile: dict) -> None:
+def format_vtt_timestamp(seconds: float) -> str:
+    millis = max(0, round(seconds * 1000))
+    hours, millis = divmod(millis, 3_600_000)
+    minutes, millis = divmod(millis, 60_000)
+    secs, millis = divmod(millis, 1000)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}.{millis:03d}"
+
+
+def write_proportional_vtt(path: Path, cue_texts: list[str], duration: float) -> None:
+    texts = [str(text).strip() for text in cue_texts if str(text).strip()]
+    if not texts:
+        raise ValueError("macos-say requires at least one non-empty cue_text")
+    weights = [max(1, len(re.sub(r"\s+", "", text))) for text in texts]
+    total_weight = sum(weights)
+    cursor = 0.0
+    rows = ["WEBVTT", ""]
+    for index, (text, weight) in enumerate(zip(texts, weights), start=1):
+        end = duration if index == len(texts) else cursor + duration * weight / total_weight
+        rows.extend([
+            str(index),
+            f"{format_vtt_timestamp(cursor)} --> {format_vtt_timestamp(end)}",
+            text,
+            "",
+        ])
+        cursor = end
+    path.write_text("\n".join(rows), encoding="utf-8")
+
+
+def lexical_text(value: str) -> str:
+    return re.sub(
+        r"[\s，。；：！？、,.!?;:“”‘’\"'（）()《》〈〉—…·]",
+        "",
+        str(value),
+    )
+
+
+def expand_edge_vtt_to_cue_texts(path: Path, cue_texts: list[str]) -> None:
+    """Subdivide native Edge sentence cues without cutting the waveform."""
+    native = parse_vtt(path)
+    targets = [str(value).strip() for value in cue_texts if str(value).strip()]
+    if not native or not targets:
+        raise ValueError("Edge TTS cue expansion requires native and target cues")
+
+    grouped: list[tuple[dict, list[str]]] = []
+    target_index = 0
+    for cue in native:
+        expected = lexical_text(cue["text"])
+        collected: list[str] = []
+        combined = ""
+        while target_index < len(targets) and len(combined) < len(expected):
+            candidate = targets[target_index]
+            candidate_lexical = lexical_text(candidate)
+            if not expected.startswith(combined + candidate_lexical):
+                raise ValueError(
+                    "target subtitle cues do not reconstruct the native Edge cue "
+                    f"{cue['text']!r}"
+                )
+            collected.append(candidate)
+            combined += candidate_lexical
+            target_index += 1
+        if combined != expected:
+            raise ValueError(
+                "target subtitle cues do not fully reconstruct the native Edge cue "
+                f"{cue['text']!r}"
+            )
+        grouped.append((cue, collected))
+    if target_index != len(targets):
+        raise ValueError("target subtitle cues contain text beyond native Edge cues")
+
+    rows = ["WEBVTT", ""]
+    output_index = 1
+    for cue, fragments in grouped:
+        start = float(cue["start_sec"])
+        end = float(cue["end_sec"])
+        weights = [max(1, len(lexical_text(fragment))) for fragment in fragments]
+        total_weight = sum(weights)
+        cursor = start
+        for fragment_index, (fragment, weight) in enumerate(
+            zip(fragments, weights)
+        ):
+            fragment_end = (
+                end
+                if fragment_index == len(fragments) - 1
+                else cursor + (end - start) * weight / total_weight
+            )
+            rows.extend(
+                [
+                    str(output_index),
+                    (
+                        f"{format_vtt_timestamp(cursor)} --> "
+                        f"{format_vtt_timestamp(fragment_end)}"
+                    ),
+                    fragment,
+                    "",
+                ]
+            )
+            output_index += 1
+            cursor = fragment_end
+    path.write_text("\n".join(rows), encoding="utf-8")
+
+
+def synthesize(
+    text: str,
+    media: Path,
+    subtitles: Path,
+    profile: dict,
+    cue_texts: list[str] | None = None,
+) -> None:
     backend = profile.get("backend", "edge-tts")
-    if backend != "edge-tts":
-        raise ValueError("This portable builder currently requires backend=edge-tts")
-    run([
-        sys.executable, "-m", "edge_tts",
-        "-v", profile["voice"],
-        f"--rate={profile.get('rate', '+0%')}",
-        f"--pitch={profile.get('pitch', '+0Hz')}",
-        f"--volume={profile.get('volume', '+0%')}",
-        "-t", text,
-        "--write-media", str(media),
-        "--write-subtitles", str(subtitles),
-    ], attempts=3)
+    if backend == "edge-tts":
+        run([
+            sys.executable, "-m", "edge_tts",
+            "-v", profile["voice"],
+            f"--rate={profile.get('rate', '+0%')}",
+            f"--pitch={profile.get('pitch', '+0Hz')}",
+            f"--volume={profile.get('volume', '+0%')}",
+            "-t", text,
+            "--write-media", str(media),
+            "--write-subtitles", str(subtitles),
+        ], attempts=3)
+        if cue_texts:
+            expand_edge_vtt_to_cue_texts(subtitles, cue_texts)
+        return
+    if backend != "macos-say":
+        raise ValueError("backend must be edge-tts or macos-say")
+    if sys.platform != "darwin" or shutil.which("say") is None:
+        raise ValueError("backend=macos-say requires the macOS say command")
+    selected_cues = cue_texts or [text]
+    with tempfile.TemporaryDirectory(prefix="story-audio-") as temporary:
+        aiff = Path(temporary) / "speech.aiff"
+        run([
+            "say",
+            "-v", profile["voice"],
+            "-r", str(int(profile.get("speaking_rate_wpm", 165))),
+            "-o", str(aiff),
+            "--", text,
+        ])
+        run([
+            "ffmpeg", "-y", "-v", "error", "-i", str(aiff),
+            "-codec:a", "libmp3lame", "-q:a", "2", str(media),
+        ])
+    write_proportional_vtt(subtitles, selected_cues, media_duration(media))
 
 
-def tts_cache_key(text: str, profile: dict) -> str:
+def tts_cache_key(
+    text: str,
+    profile: dict,
+    cue_texts: list[str] | None = None,
+) -> str:
     payload = json.dumps(
-        {"text": text, "profile": profile},
+        {"text": text, "profile": profile, "cue_texts": cue_texts},
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
@@ -117,8 +252,9 @@ def synthesize_cached(
     profile: dict,
     cache_key_path: Path,
     expected_key: str,
+    cue_texts: list[str] | None = None,
 ) -> None:
-    synthesize(text, media, subtitles, profile)
+    synthesize(text, media, subtitles, profile, cue_texts)
     cache_key_path.write_text(f"{expected_key}\n", encoding="utf-8")
 
 
@@ -251,8 +387,29 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--storyboard", type=Path, default=Path("storyboard.json"))
     parser.add_argument("--episode", type=str, default=os.environ.get("EPISODE", "default"))
+    parser.add_argument(
+        "--workspace",
+        type=Path,
+        help="Task-owned root for inputs, caches, and outputs",
+    )
     parser.add_argument("--picture", type=Path)
     parser.add_argument("--cover", type=Path)
+    parser.add_argument(
+        "--approved-cover-candidate",
+        type=Path,
+        help=(
+            "Exact human-approved audible cover MP4 to concatenate before the story. "
+            "When supplied, cover title TTS is not regenerated."
+        ),
+    )
+    parser.add_argument(
+        "--no-cover-release",
+        action="store_true",
+        help=(
+            "Build narration masters and the no-cover voiced preview only. "
+            "Do not synthesize title audio or assemble/copy a release."
+        ),
+    )
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument(
@@ -263,18 +420,39 @@ def main() -> int:
     )
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
+    if args.no_cover_release and args.approved_cover_candidate:
+        parser.error(
+            "--no-cover-release cannot be combined with "
+            "--approved-cover-candidate"
+        )
     if not 1 <= args.tts_concurrency <= 16:
         parser.error("--tts-concurrency must stay within 1..16")
 
+    workspace = (
+        args.workspace
+        or (Path(os.environ["STORY_VIDEO_WORKSPACE"]) if os.environ.get("STORY_VIDEO_WORKSPACE") else None)
+        or Path.cwd()
+    ).expanduser().resolve()
+
+    def workspace_path(path: Path) -> Path:
+        expanded = path.expanduser()
+        return expanded.resolve() if expanded.is_absolute() else (workspace / expanded).resolve()
+
     episode = args.episode
-    picture = args.picture or Path(f"out/{episode}/silent.mp4")
-    cover = args.cover or Path(f"out/{episode}/cover.png")
-    output = args.output_dir or Path(f"out/{episode}/voiced")
+    if not re.fullmatch(r"[\w.-]+", episode) or episode in {".", ".."}:
+        parser.error(
+            "--episode may contain only letters, numbers, dots, underscores, and hyphens"
+        )
+    args.storyboard = workspace_path(args.storyboard)
+    args.config = workspace_path(args.config)
+    picture = workspace_path(args.picture or Path(f"out/{episode}/silent.mp4"))
+    cover = workspace_path(args.cover or Path(f"out/{episode}/cover.png"))
+    output = workspace_path(args.output_dir or Path(f"out/{episode}/voiced"))
     args.picture = picture
     args.cover = cover
     output.mkdir(parents=True, exist_ok=True)
 
-    work_dir = Path(f".work/{episode}")
+    work_dir = workspace / ".work" / episode
     raw_dir = work_dir / "raw-groups"
     group_dir = work_dir / "continuous-groups"
     work_dir = work_dir / "work"
@@ -291,8 +469,28 @@ def main() -> int:
 
     cover_cfg = config.get("cover") or config.get("release", {})
     cover_voice = cover_cfg.get("cover_voice", {})
-    cover_duration = float(
-        cover_cfg.get("duration_sec", cover_cfg.get("cover_duration_sec", 2.7))
+    approved_cover_candidate = (
+        workspace_path(args.approved_cover_candidate)
+        if args.approved_cover_candidate
+        else None
+    )
+    if approved_cover_candidate and not approved_cover_candidate.is_file():
+        raise FileNotFoundError(
+            f"approved cover candidate not found: {approved_cover_candidate}"
+        )
+    cover_duration = (
+        0.0
+        if args.no_cover_release
+        else (
+            media_duration(approved_cover_candidate)
+            if approved_cover_candidate
+            else float(
+                cover_cfg.get(
+                    "duration_sec",
+                    cover_cfg.get("cover_duration_sec", 2.7),
+                )
+            )
+        )
     )
     title_text = str(
         cover_cfg.get("title_audio_text")
@@ -315,13 +513,16 @@ def main() -> int:
     title_base = work_dir / "cover-title-base.wav"
     title_trimmed = work_dir / "cover-title.wav"
 
-    tts_requests: list[tuple[str, Path, Path, dict, Path, str]] = []
+    tts_requests: list[
+        tuple[str, Path, Path, dict, Path, str, list[str] | None]
+    ] = []
     for group in continuity["groups"]:
         group_id = str(group["id"])
         raw = raw_dir / f"{group_id}.mp3"
         vtt = raw_dir / f"{group_id}.vtt"
         cache_key_path = raw_dir / f"{group_id}.sha256"
-        expected_key = tts_cache_key(group["speech_text"], profile)
+        cue_texts = group.get("cue_texts")
+        expected_key = tts_cache_key(group["speech_text"], profile, cue_texts)
         cached_key = (
             cache_key_path.read_text(encoding="utf-8").strip()
             if cache_key_path.exists()
@@ -341,20 +542,26 @@ def main() -> int:
                     profile,
                     cache_key_path,
                     expected_key,
+                    cue_texts,
                 )
             )
     title_cache_key_path = work_dir / "cover-title.sha256"
-    expected_title_key = tts_cache_key(title_text, title_profile)
+    title_cue_texts = [title_text]
+    expected_title_key = tts_cache_key(title_text, title_profile, title_cue_texts)
     cached_title_key = (
         title_cache_key_path.read_text(encoding="utf-8").strip()
         if title_cache_key_path.exists()
         else ""
     )
     if (
-        args.force
-        or not title_raw.exists()
-        or not title_vtt.exists()
-        or cached_title_key != expected_title_key
+        not args.no_cover_release
+        and approved_cover_candidate is None
+        and (
+            args.force
+            or not title_raw.exists()
+            or not title_vtt.exists()
+            or cached_title_key != expected_title_key
+        )
     ):
         tts_requests.append(
             (
@@ -364,29 +571,12 @@ def main() -> int:
                 title_profile,
                 title_cache_key_path,
                 expected_title_key,
+                title_cue_texts,
             )
         )
 
-    scene_list = storyboard["scenes"]
     fps = int(storyboard["project"]["fps"])
-    overlap = 0.0
-    if storyboard["project"].get("transition") == "page-flip" and len(scene_list) > 1:
-        requested_frames = max(
-            1, round(float(storyboard["project"].get("transition_sec", 0.7)) * fps)
-        )
-        shortest_frames = min(round(float(scene["duration_sec"]) * fps) for scene in scene_list)
-        overlap = min(requested_frames, max(1, int(shortest_frames * 0.45))) / fps
-    scenes: dict[str, dict] = {}
-    cursor = 0.0
-    for index, scene in enumerate(scene_list):
-        scenes[scene["id"]] = {
-            "start_sec": cursor,
-            "end_sec": cursor + float(scene["duration_sec"]),
-        }
-        cursor += float(scene["duration_sec"])
-        if index < len(scene_list) - 1:
-            cursor -= overlap
-    total = cursor
+    scenes, total = compute_scene_timeline(storyboard)
     picture_duration = media_duration(args.picture)
     if abs(picture_duration - total) > 0.08:
         raise RuntimeError(
@@ -405,6 +595,7 @@ def main() -> int:
                     selected_profile,
                     cache_key_path,
                     expected_key,
+                    cue_texts,
                 )
                 for (
                     text,
@@ -413,6 +604,7 @@ def main() -> int:
                     selected_profile,
                     cache_key_path,
                     expected_key,
+                    cue_texts,
                 ) in tts_requests
             ]
             for future in as_completed(futures):
@@ -543,66 +735,107 @@ def main() -> int:
         "-ar", "48000", "-ac", "2", str(voiced),
     ])
 
-    title_cues = parse_vtt(title_vtt)
-    if not title_cues:
-        raise RuntimeError("Cover title TTS did not produce VTT cues")
-    title_start = float(title_cues[0]["start_sec"])
-    title_end = min(media_duration(title_raw), float(title_cues[-1]["end_sec"]) + 0.03)
-    run([
-        "ffmpeg", "-y", "-v", "error", "-i", str(title_raw), "-af",
-        f"atrim=start={title_start:.6f}:end={title_end:.6f},asetpts=PTS-STARTPTS",
-        "-ar", "48000", "-ac", "1", "-c:a", "pcm_s24le", str(title_base),
-    ])
-    base_title_duration = media_duration(title_base)
-    title_available = cover_duration - title_head - 0.08
-    title_tempo = max(1.0, base_title_duration / title_available)
-    maximum_title_tempo = float(cover_cfg.get("maximum_title_tempo", 1.15))
-    if title_tempo > maximum_title_tempo + 0.001:
-        raise RuntimeError(
-            f"Cover title needs {title_tempo:.3f}x tempo, above {maximum_title_tempo:.3f}; shorten title_audio_text"
-        )
-    if title_tempo > 1.0005:
-        run([
-            "ffmpeg", "-y", "-v", "error", "-i", str(title_base),
-            "-af", f"atempo={title_tempo:.8f}", "-ar", "48000", "-ac", "1",
-            "-c:a", "pcm_s24le", str(title_trimmed),
-        ])
-    else:
-        shutil.copyfile(title_base, title_trimmed)
-
     width = int(storyboard["project"]["width"])
     height = int(storyboard["project"]["height"])
-    frames = max(1, round(cover_duration * fps))
-    release = output / "release.mp4"
-    cover_filter = (
-        f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
-        f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,"
-        f"zoompan=z='min(zoom+0.00003,1.008)':d={frames}:s={width}x{height}:fps={fps},"
-        f"trim=duration={cover_duration:.6f},setpts=PTS-STARTPTS,format=yuv420p[cv]"
-    )
-    filter_complex = ";".join([
-        f"[0:v]{cover_filter}",
-        "[1:v]setpts=PTS-STARTPTS,format=yuv420p[mv]",
-        f"[cv][mv]concat=n=2:v=1:a=0[v]",
-        f"[2:a]adelay={round(title_head * 1000)}:all=1,atrim=duration={cover_duration:.6f},"
-        f"afade=t=in:st={title_head:.6f}:d=0.03,"
-        f"apad=whole_dur={cover_duration:.6f},atrim=duration={cover_duration:.6f}[ca]",
-        "[3:a]asetpts=PTS-STARTPTS[ma]",
-        "[ca][ma]concat=n=2:v=0:a=1[a]",
-    ])
-    run([
-        "ffmpeg", "-y", "-v", "error", "-loop", "1", "-framerate", str(fps),
-        "-i", str(args.cover), "-i", str(args.picture), "-i", str(title_trimmed),
-        "-i", str(program_master),
-        "-filter_complex", filter_complex, "-map", "[v]", "-map", "[a]",
-        "-c:v", "libx264", "-crf", "18", "-preset", "fast", "-pix_fmt", "yuv420p",
-        "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
-        "-movflags", "+faststart", str(release),
-    ])
+    release = None if args.no_cover_release else output / "release.mp4"
+    approved_cover_hash = None
+    if args.no_cover_release:
+        pass
+    elif approved_cover_candidate is not None:
+        approved_cover_hash = file_hash(approved_cover_candidate)
+        run([
+            "ffmpeg", "-y", "-v", "error",
+            "-i", str(approved_cover_candidate), "-i", str(voiced),
+            "-filter_complex",
+            ";".join(
+                [
+                    f"[0:v]fps={fps},setpts=PTS-STARTPTS,"
+                    "format=yuv420p[cv]",
+                    f"[1:v]fps={fps},setpts=PTS-STARTPTS,"
+                    "format=yuv420p[mv]",
+                    "[cv][mv]concat=n=2:v=1:a=0[v]",
+                    "[0:a]aresample=48000,asetpts=PTS-STARTPTS[ca]",
+                    "[1:a]aresample=48000,asetpts=PTS-STARTPTS[ma]",
+                    "[ca][ma]concat=n=2:v=0:a=1[a]",
+                ]
+            ),
+            "-map", "[v]", "-map", "[a]",
+            "-c:v", "libx264", "-crf", "18", "-preset", "fast",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
+            "-movflags", "+faststart", str(release),
+        ])
+        if file_hash(approved_cover_candidate) != approved_cover_hash:
+            raise RuntimeError("approved cover candidate changed during release assembly")
+    else:
+        title_cues = parse_vtt(title_vtt)
+        if not title_cues:
+            raise RuntimeError("Cover title TTS did not produce VTT cues")
+        title_start = float(title_cues[0]["start_sec"])
+        title_end = min(
+            media_duration(title_raw),
+            float(title_cues[-1]["end_sec"]) + 0.03,
+        )
+        run([
+            "ffmpeg", "-y", "-v", "error", "-i", str(title_raw), "-af",
+            f"atrim=start={title_start:.6f}:end={title_end:.6f},asetpts=PTS-STARTPTS",
+            "-ar", "48000", "-ac", "1", "-c:a", "pcm_s24le", str(title_base),
+        ])
+        base_title_duration = media_duration(title_base)
+        title_available = cover_duration - title_head - 0.08
+        title_tempo = max(1.0, base_title_duration / title_available)
+        maximum_title_tempo = float(cover_cfg.get("maximum_title_tempo", 1.15))
+        if title_tempo > maximum_title_tempo + 0.001:
+            raise RuntimeError(
+                f"Cover title needs {title_tempo:.3f}x tempo, above "
+                f"{maximum_title_tempo:.3f}; shorten title_audio_text"
+            )
+        if title_tempo > 1.0005:
+            run([
+                "ffmpeg", "-y", "-v", "error", "-i", str(title_base),
+                "-af", f"atempo={title_tempo:.8f}", "-ar", "48000", "-ac", "1",
+                "-c:a", "pcm_s24le", str(title_trimmed),
+            ])
+        else:
+            shutil.copyfile(title_base, title_trimmed)
 
-    releases_dir = Path("out/releases")
-    releases_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(release, releases_dir / f"{episode}.mp4")
+        frames = max(1, round(cover_duration * fps))
+        cover_filter = (
+            f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+            f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,"
+            f"zoompan=z='min(zoom+0.00003,1.008)':d={frames}:"
+            f"s={width}x{height}:fps={fps},"
+            f"trim=duration={cover_duration:.6f},"
+            "setpts=PTS-STARTPTS,format=yuv420p[cv]"
+        )
+        filter_complex = ";".join([
+            f"[0:v]{cover_filter}",
+            "[1:v]setpts=PTS-STARTPTS,format=yuv420p[mv]",
+            f"[cv][mv]concat=n=2:v=1:a=0[v]",
+            f"[2:a]adelay={round(title_head * 1000)}:all=1,"
+            f"atrim=duration={cover_duration:.6f},"
+            f"afade=t=in:st={title_head:.6f}:d=0.03,"
+            f"apad=whole_dur={cover_duration:.6f},"
+            f"atrim=duration={cover_duration:.6f}[ca]",
+            "[3:a]asetpts=PTS-STARTPTS[ma]",
+            "[ca][ma]concat=n=2:v=0:a=1[a]",
+        ])
+        run([
+            "ffmpeg", "-y", "-v", "error", "-loop", "1",
+            "-framerate", str(fps),
+            "-i", str(args.cover), "-i", str(args.picture),
+            "-i", str(title_trimmed), "-i", str(program_master),
+            "-filter_complex", filter_complex, "-map", "[v]", "-map", "[a]",
+            "-c:v", "libx264", "-crf", "18", "-preset", "fast",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
+            "-movflags", "+faststart", str(release),
+        ])
+
+    if release is not None:
+        releases_dir = workspace / "out" / "releases"
+        releases_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(release, releases_dir / f"{episode}.mp4")
 
     primary_errors = [abs(float(row["semantic_start_error_sec"])) for row in cue_rows]
     max_error = max(primary_errors, default=0.0)
@@ -640,8 +873,19 @@ def main() -> int:
             if background_music is not None
             else {"enabled": False}
         ),
+        "approved_cover_candidate": (
+            {
+                "path": str(approved_cover_candidate),
+                "sha256": approved_cover_hash,
+                "human_approved": True,
+                "concatenated_without_regenerating_title_tts": True,
+            }
+            if approved_cover_candidate is not None
+            else None
+        ),
+        "release_assembled": release is not None,
         "voiced_video": str(voiced.resolve()),
-        "release_video": str(release.resolve()),
+        "release_video": str(release.resolve()) if release is not None else None,
     }
     (output / "build.json").write_text(json.dumps(build, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (output / "sync-map.json").write_text(json.dumps(sync_map, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -653,7 +897,7 @@ def main() -> int:
         "maximum_sync_error_sec": round(max_error, 3),
         "master": str(master),
         "voiced_video": str(voiced),
-        "release_video": str(release),
+        "release_video": str(release) if release is not None else None,
     }, ensure_ascii=False, indent=2))
     return 0 if max_error <= max_allowed_error else 2
 

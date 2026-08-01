@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -39,7 +40,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--title", default="手绘故事")
     parser.add_argument("--episode", default=os.environ.get("EPISODE", "default"))
-    parser.add_argument("--series-title", default="手绘故事 · 动画")
+    parser.add_argument("--series-title")
     parser.add_argument("--episode-label")
     parser.add_argument("--episode-number")
     parser.add_argument("--cover-title")
@@ -80,10 +81,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--character-reference", type=Path)
     parser.add_argument("--text-mode", choices=("image2", "font"), default="font")
     parser.add_argument(
+        "--style-profile",
+        help=(
+            "Reusable style profile id from config/style-profiles/ or an absolute/"
+            "project-relative JSON path"
+        ),
+    )
+    parser.add_argument(
         "--visual-mode",
         choices=("diary", "essay", "ink-comic"),
-        default="diary",
-        help="Diary, literary essay, or full-screen 16:9 monochrome motion comic",
+        help=(
+            "Diary, literary essay, or 3:4 portrait monochrome motion comic. "
+            "When omitted, a style profile selects its base mode; otherwise defaults to diary."
+        ),
     )
     parser.add_argument(
         "--jobs",
@@ -104,6 +114,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--force", action="store_true")
     parser.add_argument(
+        "--workspace",
+        type=Path,
+        help=(
+            "Task-owned directory for storyboards, generated assets, caches, and "
+            "videos. Defaults to STORY_VIDEO_WORKSPACE or the caller's current directory."
+        ),
+    )
+    parser.add_argument(
         "--project-dir",
         type=Path,
         default=default_project(),
@@ -122,17 +140,35 @@ def run(command: list[str], project: Path) -> None:
     subprocess.run(command, cwd=project, check=True)
 
 
+def resolve_workspace_path(workspace: Path, value: Path | None) -> Path | None:
+    if value is None:
+        return None
+    expanded = value.expanduser()
+    return expanded.resolve() if expanded.is_absolute() else (workspace / expanded).resolve()
+
+
 def main() -> None:
     args = parse_args()
     project = args.project_dir.expanduser().resolve()
     require_project(project)
+    workspace_value = (
+        args.workspace
+        or (Path(os.environ["STORY_VIDEO_WORKSPACE"]) if os.environ.get("STORY_VIDEO_WORKSPACE") else None)
+        or Path.cwd()
+    )
+    workspace = workspace_value.expanduser().resolve()
+    workspace.mkdir(parents=True, exist_ok=True)
     if args.jobs < 1 or args.jobs > 16:
         raise SystemExit("--jobs must be within 1..16")
+    if not re.fullmatch(r"[\w.-]+", args.episode) or args.episode in {".", ".."}:
+        raise SystemExit(
+            "--episode may contain only letters, numbers, dots, underscores, and hyphens"
+        )
     os.environ["EPISODE"] = args.episode
-    isolated_dir = project / "episodes" / args.episode
-    default_storyboard = project / "storyboard.json"
+    isolated_dir = workspace / "episodes" / args.episode
+    default_storyboard = workspace / "storyboard.json"
     requested_storyboard = (
-        args.storyboard.expanduser().resolve()
+        resolve_workspace_path(workspace, args.storyboard)
         if args.storyboard
         else (
             default_storyboard
@@ -144,9 +180,9 @@ def main() -> None:
     if args.images:
         if args.mode == "import":
             raise SystemExit("--mode import is reserved for Codex Image2 manifests")
-        command = ["npm", "run", "import:uploaded", "--"]
+        command = ["npm", "run", "import:uploaded", "--", "--workspace", str(workspace)]
         for image in args.images:
-            command += ["--image", str(image.expanduser().resolve())]
+            command += ["--image", str(resolve_workspace_path(workspace, image))]
         command += [
             "--title",
             args.title,
@@ -160,16 +196,16 @@ def main() -> None:
             args.layout,
         ]
         uploaded_storyboard = (
-            args.output.expanduser().resolve()
+            resolve_workspace_path(workspace, args.output)
             if args.output
             else (
-                project / "storyboard.uploaded.json"
+                workspace / "storyboard.uploaded.json"
                 if args.episode == "default"
                 else isolated_dir / "storyboard.uploaded.json"
             )
         )
         uploaded_manifest = (
-            project / "uploaded-pages.json"
+            workspace / "uploaded-pages.json"
             if args.episode == "default"
             else isolated_dir / "uploaded-pages.json"
         )
@@ -185,22 +221,22 @@ def main() -> None:
         if args.mode in {"full", "render"}:
             run([
                 "npm", "run", "render:uploaded", "--",
-                "--episode", args.episode,
+                "--workspace", str(workspace), "--episode", args.episode,
                 "--storyboard", str(uploaded_storyboard),
             ], project)
             print(
                 f"Rendered uploaded-image video: "
-                f"{project / 'out' / args.episode / 'uploaded.mp4'}"
+                f"{workspace / 'out' / args.episode / 'uploaded.mp4'}"
             )
         elif args.mode == "preview":
             run([
                 "npm", "run", "render:uploaded:preview", "--",
-                "--episode", args.episode,
+                "--workspace", str(workspace), "--episode", args.episode,
                 "--storyboard", str(uploaded_storyboard),
             ], project)
             print(
                 f"Rendered uploaded-image preview: "
-                f"{project / 'out' / args.episode / 'uploaded-preview.mp4'}"
+                f"{workspace / 'out' / args.episode / 'uploaded-preview.mp4'}"
             )
         else:
             print(f"Prepared uploaded-image storyboard: {uploaded_storyboard}")
@@ -209,9 +245,10 @@ def main() -> None:
     if args.mode in {"render", "preview"}:
         run([
             "npm", "run", "render" if args.mode == "render" else "render:preview",
-            "--", "--episode", args.episode, "--storyboard", str(requested_storyboard),
+            "--", "--workspace", str(workspace), "--episode", args.episode,
+            "--storyboard", str(requested_storyboard),
         ], project)
-        output = project / "out" / args.episode / (
+        output = workspace / "out" / args.episode / (
             "silent.mp4" if args.mode == "render" else "silent-preview.mp4"
         )
         print(f"Rendered silent video: {output}")
@@ -220,10 +257,10 @@ def main() -> None:
     if args.mode == "import":
         command = [
             "npm", "run", "import:codex", "--",
-            "--jobs", str(args.jobs),
+            "--workspace", str(workspace), "--jobs", str(args.jobs),
         ]
         if args.manifest:
-            command += ["--manifest", str(args.manifest.expanduser().resolve())]
+            command += ["--manifest", str(resolve_workspace_path(workspace, args.manifest))]
         elif args.episode != "default":
             command += ["--manifest", str(isolated_dir / "codex-image-jobs.json")]
         if args.episode == "default" and not args.output:
@@ -232,7 +269,7 @@ def main() -> None:
         print(
             "Imported Codex Image2 assets"
             + (
-                f" and activated: {project / 'storyboard.json'}"
+                f" and activated: {workspace / 'storyboard.json'}"
                 if "--apply" in command
                 else " without changing the global storyboard"
             )
@@ -250,22 +287,18 @@ def main() -> None:
     ):
         raise SystemExit("OPENAI_API_KEY is required only for --generator api")
 
-    command = ["npm", "run", "story", "--"]
+    command = ["npm", "run", "story", "--", "--workspace", str(workspace)]
     if args.input:
-        command += ["--input", str(args.input.expanduser().resolve())]
+        command += ["--input", str(resolve_workspace_path(workspace, args.input))]
     else:
         command += ["--text", args.text]
     command += [
         "--title",
         args.title,
-        "--series-title",
-        args.series_title,
         "--text-mode",
         args.text_mode,
         "--generator",
         args.generator,
-        "--visual-mode",
-        args.visual_mode,
         "--transition",
         args.transition,
         "--transition-sec",
@@ -273,6 +306,12 @@ def main() -> None:
         "--jobs",
         str(args.jobs),
     ]
+    if args.series_title:
+        command += ["--series-title", args.series_title]
+    if args.style_profile:
+        command += ["--style-profile", args.style_profile]
+    if args.visual_mode:
+        command += ["--visual-mode", args.visual_mode]
     for option, value in (
         ("--episode-label", args.episode_label),
         ("--episode-number", args.episode_number),
@@ -286,18 +325,18 @@ def main() -> None:
     if args.character_reference_prompt:
         command += [
             "--character-reference-prompt",
-            str(args.character_reference_prompt.expanduser().resolve()),
+            str(resolve_workspace_path(workspace, args.character_reference_prompt)),
         ]
     if args.visual_plan:
-        command += ["--visual-plan", str(args.visual_plan.expanduser().resolve())]
+        command += ["--visual-plan", str(resolve_workspace_path(workspace, args.visual_plan))]
     if args.scene_contract:
         command.append("--scene-contract")
     if args.manifest:
-        command += ["--manifest", str(args.manifest.expanduser().resolve())]
+        command += ["--manifest", str(resolve_workspace_path(workspace, args.manifest))]
     elif args.episode != "default":
         command += ["--manifest", str(isolated_dir / "codex-image-jobs.json")]
     if args.output:
-        command += ["--output", str(args.output.expanduser().resolve())]
+        command += ["--output", str(resolve_workspace_path(workspace, args.output))]
     elif args.episode != "default":
         command += ["--output", str(isolated_dir / "storyboard.json")]
     if args.asset_set:
@@ -305,7 +344,7 @@ def main() -> None:
     if args.character_reference:
         command += [
             "--character-reference",
-            str(args.character_reference.expanduser().resolve()),
+            str(resolve_workspace_path(workspace, args.character_reference)),
         ]
 
     if args.mode in {"generate", "full"}:
@@ -319,15 +358,15 @@ def main() -> None:
 
     run(command, project)
     generated_storyboard = (
-        args.output.expanduser().resolve()
+        resolve_workspace_path(workspace, args.output)
         if args.output
         else (
             isolated_dir / "storyboard.json"
             if args.episode != "default"
             else (
-                project / "storyboard.json"
+                workspace / "storyboard.json"
                 if args.generator == "api" and args.mode in {"generate", "full"}
-                else project / "storyboard.generated.json"
+                else workspace / "storyboard.generated.json"
             )
         )
     )
@@ -335,12 +374,12 @@ def main() -> None:
         print(f"Prepared dynamic storyboard plan: {generated_storyboard}")
     elif args.generator == "codex":
         generated_manifest = (
-            args.manifest.expanduser().resolve()
+            resolve_workspace_path(workspace, args.manifest)
             if args.manifest
             else (
                 isolated_dir / "codex-image-jobs.json"
                 if args.episode != "default"
-                else project / "codex-image-jobs.json"
+                else workspace / "codex-image-jobs.json"
             )
         )
         print(
@@ -351,7 +390,7 @@ def main() -> None:
     elif args.mode == "generate":
         print(f"Generated storyboard: {generated_storyboard}")
     else:
-        print(f"Rendered silent video: {project / 'out' / args.episode / 'silent.mp4'}")
+        print(f"Rendered silent video: {workspace / 'out' / args.episode / 'silent.mp4'}")
 
 
 if __name__ == "__main__":

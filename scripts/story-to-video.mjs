@@ -4,6 +4,8 @@ import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {homedir} from 'node:os';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {deepMerge, loadStyleProfile} from './lib/style-profile.mjs';
+import {resolveWorkspace, resolveWorkspacePath} from './lib/workspace.mjs';
 import {
   durationFor,
   formatCaption,
@@ -38,20 +40,46 @@ const parseArgs = (tokens) => {
 };
 
 const args = parseArgs(process.argv.slice(2));
+const workspace = resolveWorkspace(args, root);
 if (!args.input && !args.text) {
   console.error(
-    'Usage: npm run story -- --input examples/story.txt [--generate --apply --render]\n' +
+    'Usage: npm run story -- --input examples/story.txt [--style-profile profile-id] [--generate --apply --render]\n' +
       '       npm run story -- --text "第一句。第二句。"',
   );
   process.exit(1);
 }
 
+const loadedStyleProfile = args['style-profile']
+  ? loadStyleProfile(String(args['style-profile']), {root, styles})
+  : null;
+const styleProfile = loadedStyleProfile?.profile || null;
+const hasExplicitVisualMode = Object.hasOwn(args, 'visual-mode');
+const visualMode = String(
+  hasExplicitVisualMode
+    ? args['visual-mode']
+    : styleProfile?.base_mode || 'diary',
+);
+if (
+  styleProfile &&
+  hasExplicitVisualMode &&
+  visualMode !== styleProfile.base_mode
+) {
+  throw new Error(
+    `--visual-mode ${JSON.stringify(visualMode)} conflicts with style profile ` +
+      `${JSON.stringify(styleProfile.id)} base_mode ${JSON.stringify(styleProfile.base_mode)}`,
+  );
+}
+
 const sourceText = args.input
-  ? readFileSync(resolve(root, String(args.input)), 'utf8')
+  ? readFileSync(resolveWorkspacePath(workspace, args.input), 'utf8')
   : String(args.text);
 const title = String(args.title || '手绘故事');
+const profileCover = styleProfile?.episode_defaults.cover || {};
 const cover = {
-  series_title: String(args['series-title'] || '手绘故事 · 动画'),
+  ...profileCover,
+  series_title: String(
+    args['series-title'] || profileCover.series_title || '手绘故事 · 动画',
+  ),
   ...(args['episode-label'] ? {episode_label: String(args['episode-label'])} : {}),
   ...(args['episode-number'] ? {episode_number: String(args['episode-number'])} : {}),
   ...(args['cover-title'] ? {title: String(args['cover-title'])} : {}),
@@ -59,7 +87,7 @@ const cover = {
 };
 const textMode = String(args['text-mode'] || 'font');
 const visualPlanPath = args['visual-plan']
-  ? resolve(root, String(args['visual-plan']))
+  ? resolveWorkspacePath(workspace, args['visual-plan'])
   : null;
 const visualPlan = visualPlanPath
   ? JSON.parse(readFileSync(visualPlanPath, 'utf8'))
@@ -74,7 +102,6 @@ const shouldApply = args.apply === true;
 const shouldRender = args.render === true;
 const shouldForce = args.force === true;
 const sceneContract = args['scene-contract'] === true;
-const visualMode = String(args['visual-mode'] || 'diary');
 const generationConcurrency = Number(args.jobs || 4);
 
 if (!['image2', 'font'].includes(textMode)) {
@@ -127,14 +154,23 @@ if (shouldGenerateWithApi && !process.env.OPENAI_API_KEY) {
   );
 }
 
-const style = styles[visualMode];
+const style = styleProfile
+  ? deepMerge(styles[visualMode], styleProfile.style_overrides)
+  : styles[visualMode];
 const styleLock = style.styleLock;
+const episodeAccent = styleProfile?.episode_defaults.accent || '#A93B32';
+const episodeColorGrade =
+  styleProfile?.episode_defaults.color_grade || 'monochrome';
+const sceneNeedsBundledStyleRefs =
+  typeof style.scenePrompt?.needsStyleRefs === 'boolean'
+    ? style.scenePrompt.needsStyleRefs
+    : visualMode === 'diary';
 const characterLock = String(
   args['character-lock'] ||
     '重复出现的主角须保持同一张脸、发型、年龄、服装配色和身体比例；具体人物身份以故事原文为准；不得添加原文未提及的配角、道具或文字',
 );
 const characterReferencePromptPath = args['character-reference-prompt']
-  ? resolve(root, String(args['character-reference-prompt']))
+  ? resolveWorkspacePath(workspace, args['character-reference-prompt'])
   : null;
 if (characterReferencePromptPath && !existsSync(characterReferencePromptPath)) {
   throw new Error(`Missing character reference prompt: ${characterReferencePromptPath}`);
@@ -225,6 +261,7 @@ const illustrationPlan = Object.fromEntries(
 const hashInput = [
   generator === 'codex' ? 'codex-illustration-v5' : 'api-v3',
   visualMode,
+  styleProfile ? JSON.stringify(styleProfile) : '',
   title,
   textMode,
   characterLock,
@@ -246,8 +283,8 @@ if (!existsSync(referenceBw) || !existsSync(referenceColor)) {
 }
 
 const generatedRoot = generator === 'codex' ? `generated/codex/${assetSet}` : 'generated/auto';
-const promptDir = resolve(root, 'prompts', generatedRoot);
-const assetDir = resolve(root, 'public/assets', generatedRoot);
+const promptDir = resolve(workspace, 'prompts', generatedRoot);
+const assetDir = resolve(workspace, 'public/assets', generatedRoot);
 mkdirSync(promptDir, {recursive: true});
 mkdirSync(assetDir, {recursive: true});
 
@@ -334,7 +371,7 @@ let codexCharacterReference = null;
 let suppliedCharacterReference = null;
 if (generator === 'codex' && visualMode !== 'essay') {
   suppliedCharacterReference = args['character-reference']
-    ? resolve(root, String(args['character-reference']))
+    ? resolveWorkspacePath(workspace, args['character-reference'])
     : null;
   if (suppliedCharacterReference && !existsSync(suppliedCharacterReference)) {
     throw new Error(`Missing supplied character reference: ${suppliedCharacterReference}`);
@@ -402,7 +439,9 @@ for (let index = 0; index < storyParts.length; index += 1) {
   const sceneKind = String(structuredVisualPlan.scene_kind || 'narrative');
   const glyph = structuredVisualPlan.glyph ? String(structuredVisualPlan.glyph) : null;
   const caseLabel = structuredVisualPlan.case_label ? String(structuredVisualPlan.case_label) : null;
-  const accent = structuredVisualPlan.accent ? String(structuredVisualPlan.accent) : '#A93B32';
+  const accent = structuredVisualPlan.accent
+    ? String(structuredVisualPlan.accent)
+    : episodeAccent;
   const plannedDuration = Number(structuredVisualPlan.duration_sec);
   const plateModeRaw = String(structuredVisualPlan.plate_mode || '').trim();
   let plateMode = ['raster', 'svg', 'code'].includes(plateModeRaw)
@@ -455,9 +494,9 @@ for (let index = 0; index < storyParts.length; index += 1) {
   const needsRasterMaster = plateMode === 'raster';
   const usesImage2Text = needsRasterMaster && visualMode === 'diary' && textMode === 'image2';
   const textVariant = usesImage2Text ? 'image2text' : 'font';
-  const masterSize = visualMode === 'ink-comic'
-    ? style.masterSize.default
-    : usesImage2Text ? '1024x1536' : '1024x1024';
+  const masterSize = usesImage2Text
+    ? style.masterSize.image2text || '1024x1536'
+    : style.masterSize.default;
   const captionPanel = fill(style.captionPanel[textVariant] || style.captionPanel.font, {caption});
   const textConstraint = style.textConstraint[textVariant] || style.textConstraint.font;
   const illustrationPanel = style.illustrationPanel[textVariant] || style.illustrationPanel.font;
@@ -527,7 +566,7 @@ note: no Image2 master; renderer draws this plate in code or loads the static SV
   if (needsRasterMaster && shouldGenerateWithApi) {
     runImage2Edit({
       images: [
-        ...(visualMode === 'ink-comic' ? [] : [referenceBw, referenceColor]),
+        ...(sceneNeedsBundledStyleRefs ? [referenceBw, referenceColor] : []),
         ...(previousColor ? [previousColor] : []),
       ],
       promptFile: masterPrompt,
@@ -565,7 +604,7 @@ note: no Image2 master; renderer draws this plate in code or loads the static SV
           absoluteAsset(masterName),
           '-vf',
           visualMode === 'ink-comic'
-            ? 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,format=gray,eq=contrast=1.16:brightness=-0.02,unsharp=5:5:0.42:5:5:0'
+            ? 'format=gray,eq=contrast=1.16:brightness=-0.02,unsharp=5:5:0.42:5:5:0'
             : usesImage2Text
             ? 'crop=1024:1024:0:512,format=gray,eq=contrast=1.18:brightness=0.035,unsharp=5:5:0.55:5:5:0'
             : 'format=gray,eq=contrast=1.18:brightness=0.035,unsharp=5:5:0.55:5:5:0',
@@ -589,7 +628,7 @@ note: no Image2 master; renderer draws this plate in code or loads the static SV
         visualMode === 'essay'
           ? 'scale=868:698:force_original_aspect_ratio=decrease,pad=868:698:(ow-iw)/2:(oh-ih)/2:#FCFAF5'
           : visualMode === 'ink-comic'
-            ? 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080'
+            ? 'null'
             : usesImage2Text ? 'crop=1024:1024:0:512' : 'null',
         '-frames:v',
         '1',
@@ -615,7 +654,7 @@ note: no Image2 master; renderer draws this plate in code or loads the static SV
       prompt: readFileSync(masterPrompt, 'utf8').trim(),
       output_master: absoluteAsset(masterName),
       references: [
-        ...(visualMode === 'ink-comic' ? [] : [referenceBw, referenceColor]),
+        ...(sceneNeedsBundledStyleRefs ? [referenceBw, referenceColor] : []),
         ...(visualMode === 'essay' ? [] : [codexCharacterReference].filter(Boolean)),
       ].filter(Boolean),
     });
@@ -644,6 +683,9 @@ note: no Image2 master; renderer draws this plate in code or loads the static SV
     motion: essayMotion,
     transition_to_next: sceneTransition,
     visual_mode: visualMode,
+    ...(visualMode === 'ink-comic'
+      ? {color_grade: episodeColorGrade}
+      : {}),
     plate_mode: plateMode,
     code_plate: codePlate,
     scene_kind: sceneKind,
@@ -660,7 +702,7 @@ note: no Image2 master; renderer draws this plate in code or loads the static SV
       : visualMode === 'essay'
       ? '柔和暖调水彩：暖赭石、褪色靛蓝、灰玫瑰、鼠尾草绿、羊皮纸奶油色，纸上可见笔触纹理，留白25%以上'
       : visualMode === 'ink-comic'
-        ? `全画面黑白灰，仅用 ${accent} 强调一个关键对象或情绪焦点`
+        ? `低饱和有色水墨，色调分级 ${episodeColorGrade}，仅用 ${accent} 强调一个关键对象或情绪焦点`
         : '仅使用元视频的鼠尾草绿、灰蓝、浅棕、砖红、暖黄等低饱和蜡笔色，保留大量纯白',
     detail_hint: null,
     assets: {
@@ -684,11 +726,16 @@ const storyboard = {
     enable_detail: false,
     gen_size: 1024,
     visual_mode: visualMode,
+    ...(visualMode === 'ink-comic'
+      ? {color_grade: episodeColorGrade}
+      : {}),
+    ...(loadedStyleProfile ? {style_profile: loadedStyleProfile.trace} : {}),
+    ...(styleProfile ? {accent: episodeAccent} : {}),
     subtitle_contract: visualMode === 'ink-comic' ? 'draft_summary' : undefined,
-    export_size: visualMode === 'ink-comic' ? [1920, 1080] : [1080, 1440],
-    ratio: visualMode === 'ink-comic' ? '16:9' : '3:4',
-    width: visualMode === 'ink-comic' ? 1920 : 1080,
-    height: visualMode === 'ink-comic' ? 1080 : 1440,
+    export_size: style.exportSize,
+    ratio: style.ratio,
+    width: style.width,
+    height: style.height,
     fps: 30,
     transition,
     transition_sec: transitionSec,
@@ -705,7 +752,7 @@ const storyboard = {
 };
 
 const outputPath = resolve(
-  root,
+  workspace,
   String(args.output || (shouldApply ? 'storyboard.json' : 'storyboard.generated.json')),
 );
 mkdirSync(dirname(outputPath), {recursive: true});
@@ -713,7 +760,11 @@ writeFileSync(outputPath, `${JSON.stringify(storyboard, null, 2)}\n`);
 
 let codexManifestPath = null;
 if (generator === 'codex') {
-  const manifestPath = resolve(root, String(args.manifest || 'codex-image-jobs.json'));
+  const manifestPath = resolveWorkspacePath(
+    workspace,
+    args.manifest,
+    'codex-image-jobs.json',
+  );
   codexManifestPath = manifestPath;
   mkdirSync(dirname(manifestPath), {recursive: true});
   writeFileSync(
@@ -723,8 +774,10 @@ if (generator === 'codex') {
         version: 1,
         generator: 'codex-image2',
         visual_mode: visualMode,
-        master_size: visualMode === 'ink-comic' ? '1536x1024' : null,
+        ...(loadedStyleProfile ? {style_profile: loadedStyleProfile.trace} : {}),
+        master_size: visualMode === 'ink-comic' ? style.masterSize.default : null,
         asset_set: assetSet,
+        workspace,
         storyboard: outputPath,
         text_mode: textMode,
         execution: {
@@ -764,7 +817,7 @@ console.log(
 if (shouldRender) {
   execFileSync(
     'npm',
-    ['run', 'render', '--', '--storyboard', outputPath],
+    ['run', 'render', '--', '--workspace', workspace, '--storyboard', outputPath],
     {cwd: root, stdio: 'inherit'},
   );
 }

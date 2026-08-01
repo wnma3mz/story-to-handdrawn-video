@@ -13,6 +13,11 @@ from pathlib import Path
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("manifest", type=Path)
+    parser.add_argument(
+        "--workspace",
+        type=Path,
+        help="Shared task root; defaults to the batch manifest directory",
+    )
     parser.add_argument("--jobs", type=int, default=2)
     parser.add_argument("--tts-jobs", type=int, default=3)
     parser.add_argument("--force", action="store_true")
@@ -24,6 +29,7 @@ def main() -> int:
 
     project = Path(__file__).resolve().parents[1]
     manifest_path = args.manifest.expanduser().resolve()
+    workspace = (args.workspace or manifest_path.parent).expanduser().resolve()
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
     episodes = payload.get("episodes", [])
     if not episodes:
@@ -39,6 +45,8 @@ def main() -> int:
             "scripts/release_story.py",
             "--episode",
             str(item["episode"]),
+            "--workspace",
+            str((workspace / str(item.get("workspace", "."))).resolve()),
             "--storyboard",
             str((manifest_path.parent / item["storyboard"]).resolve()),
             "--config",

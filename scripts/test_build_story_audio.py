@@ -8,7 +8,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from build_story_audio import build_program_master, resolve_background_music
+from build_story_audio import (
+    build_program_master,
+    expand_edge_vtt_to_cue_texts,
+    parse_vtt,
+    resolve_background_music,
+    write_proportional_vtt,
+)
 
 
 def create_tone(path: Path, frequency: int, duration: float, channels: int) -> None:
@@ -75,6 +81,50 @@ class BackgroundMusicTests(unittest.TestCase):
             self.assertEqual(media["streams"][0]["sample_rate"], "48000")
             self.assertEqual(media["streams"][0]["channels"], 2)
             self.assertAlmostEqual(float(media["format"]["duration"]), 1.0, places=2)
+
+
+class LocalVoiceSubtitleTests(unittest.TestCase):
+    def test_proportional_vtt_preserves_one_cue_per_scene(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "voice.vtt"
+            write_proportional_vtt(path, ["第一场。", "第二场更长一些。"], 9.0)
+            cues = parse_vtt(path)
+            self.assertEqual([cue["text"] for cue in cues], ["第一场。", "第二场更长一些。"])
+            self.assertAlmostEqual(cues[0]["start_sec"], 0.0, places=3)
+            self.assertAlmostEqual(cues[-1]["end_sec"], 9.0, places=3)
+
+    def test_native_edge_cues_expand_without_changing_sentence_times(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "voice.vtt"
+            path.write_text(
+                "\n".join(
+                    [
+                        "WEBVTT",
+                        "",
+                        "1",
+                        "00:00:00.100 --> 00:00:04.100",
+                        "风起了，少年回头。",
+                        "",
+                        "2",
+                        "00:00:04.100 --> 00:00:08.100",
+                        "灯还亮着。",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            expand_edge_vtt_to_cue_texts(
+                path,
+                ["风起了。", "少年回头。", "灯还亮着。"],
+            )
+            cues = parse_vtt(path)
+            self.assertEqual(
+                [cue["text"] for cue in cues],
+                ["风起了。", "少年回头。", "灯还亮着。"],
+            )
+            self.assertAlmostEqual(cues[0]["start_sec"], 0.1, places=3)
+            self.assertAlmostEqual(cues[1]["end_sec"], 4.1, places=3)
+            self.assertAlmostEqual(cues[2]["end_sec"], 8.1, places=3)
 
 
 if __name__ == "__main__":

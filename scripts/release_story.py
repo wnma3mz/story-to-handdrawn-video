@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,6 +37,11 @@ def update_progress(path: Path | None, stage: str) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--episode", default=os.environ.get("EPISODE", "default"))
+    parser.add_argument(
+        "--workspace",
+        type=Path,
+        help="Task-owned root for storyboards, caches, and release outputs",
+    )
     parser.add_argument("--storyboard", type=Path, required=True)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--jobs", type=int, default=4)
@@ -45,10 +51,27 @@ def main() -> int:
     args = parser.parse_args()
     if not 1 <= args.jobs <= 16:
         parser.error("--jobs must stay within 1..16")
+    if not re.fullmatch(r"[\w.-]+", args.episode) or args.episode in {".", ".."}:
+        parser.error(
+            "--episode may contain only letters, numbers, dots, underscores, and hyphens"
+        )
 
     project = Path(__file__).resolve().parents[1]
-    storyboard_path = args.storyboard.expanduser().resolve()
-    config_path = args.config.expanduser().resolve()
+    workspace = (
+        args.workspace
+        or (Path(os.environ["STORY_VIDEO_WORKSPACE"]) if os.environ.get("STORY_VIDEO_WORKSPACE") else None)
+        or Path.cwd()
+    ).expanduser().resolve()
+
+    def workspace_path(path: Path) -> Path:
+        expanded = path.expanduser()
+        return expanded.resolve() if expanded.is_absolute() else (workspace / expanded).resolve()
+
+    args.progress_file = (
+        workspace_path(args.progress_file) if args.progress_file else None
+    )
+    storyboard_path = workspace_path(args.storyboard)
+    config_path = workspace_path(args.config)
     storyboard = json.loads(storyboard_path.read_text(encoding="utf-8"))
     config = json.loads(config_path.read_text(encoding="utf-8"))
     visual_mode = storyboard["project"].get("visual_mode", "diary")
@@ -76,13 +99,15 @@ def main() -> int:
         str(storyboard_path),
     ], project)
 
-    picture = project / "out" / args.episode / "silent.mp4"
-    cover = project / "out" / args.episode / "cover.png"
+    picture = workspace / "out" / args.episode / "silent.mp4"
+    cover = workspace / "out" / args.episode / "cover.png"
     storyboard_mtime = storyboard_path.stat().st_mtime
     if not args.skip_render:
         render_args = [
             "--episode",
             args.episode,
+            "--workspace",
+            str(workspace),
             "--storyboard",
             str(storyboard_path),
         ]
@@ -107,6 +132,8 @@ def main() -> int:
         "scripts/build_story_audio.py",
         "--episode",
         args.episode,
+        "--workspace",
+        str(workspace),
         "--storyboard",
         str(storyboard_path),
         "--config",
@@ -122,7 +149,7 @@ def main() -> int:
         audio_command.append("--force")
     run(audio_command, project)
 
-    voiced_dir = project / "out" / args.episode / "voiced"
+    voiced_dir = workspace / "out" / args.episode / "voiced"
     release = voiced_dir / "release.mp4"
     cover_config = config.get("cover") or config.get("release", {})
     cover_duration = float(

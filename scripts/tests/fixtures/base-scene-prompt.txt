@@ -1,0 +1,13 @@
+Use case: illustration-story
+Asset type: isolated compiler test fixture.
+Input images:
+- Image 1: stale style reference.
+- Image 2: stale character reference.
+Narrative sentence to illustrate: "A concrete scene happens now."
+Scene direction: Keep the action readable.
+Create one concrete, immediately readable tableau for that sentence. Use the locked recurring protagonists whenever the current sentence requires them.
+Character lock: Hero Alpha has a square face and a red sash.
+Other Beta has tight curls and a blue cloak.
+Style: sparse hand-drawn scene on a white field.
+Continuity: preserve the locked character design. Use the fixed character sheet only for the protagonist's identity, never copy its pose or composition. Include only people required by the current narrative sentence.
+Constraints: no text, labels, logo, signature or watermark.

@@ -8,7 +8,7 @@
 
 ## 中文
 
-把中文故事文案或一组有序图片转换成三类成片：3:4 竖屏**手绘日记漫画**、3:4 竖屏**文学随笔**（文字主导+水彩氛围插图），或 16:9 横屏**黑白历史动态漫 / 案卷剧场**。三种模式都提供自然连续运镜、非白底有声封面、按情节分组的连续配音与交付质检。基于 [Remotion](https://www.remotion.dev/) 与 FFmpeg；静音画面母版、无封面配音版和最终发布版分别保留。
+把中文故事文案或一组有序图片转换成三类 3:4 竖屏成片：**手绘日记漫画**、**文学随笔**（文字主导+水彩氛围插图），或**黑白历史动态漫 / 案卷剧场**。三种模式都提供自然连续运镜、非白底有声封面、按情节分组的连续配音与交付质检。基于 [Remotion](https://www.remotion.dev/) 与 FFmpeg；静音画面母版、无封面配音版和最终发布版分别保留。
 
 本仓库包含两部分:
 
@@ -18,7 +18,7 @@
 ### 功能特性
 
 - 中文故事自动分句和动态分镜,保留原文措辞
-- `diary`、`essay`、`ink-comic` 三种视觉模式：日记用白纸手账构图逐句配图；随笔以文字为主、搭配柔和水彩氛围插图仅做呼吸式运镜；历史动态漫使用 16:9 全屏黑白画面、代码字幕和单一线索色
+- `diary`、`essay`、`ink-comic` 三种视觉模式：日记用白纸手账构图逐句配图；随笔以文字为主、搭配柔和水彩氛围插图仅做呼吸式运镜；历史动态漫在 3:4 竖屏中使用上部横向黑白画框、下部代码字幕和单一线索色
 - 上传漫画页或完整图片,保持原顺序和构图
 - 自动拆分上方文字区与下方插画区
 - 本地生成与彩色插画对齐的黑白层
@@ -29,7 +29,7 @@
 - 可配置的非白底系列封面，标题由代码精确排版并带可听见的标题音频
 - 3–6 个连续叙事组配音，VTT 只用于同步测量，不切碎句子
 - 语义同步、响度、首帧、封面音频、完整解码等自动质检
-- `diary` 输出 1080×1440，`ink-comic` 输出 1920×1080；两者都支持快速预览
+- 三种模式均输出 1080×1440，并支持 720×960 快速预览
 - Codex Image2 工作流,以及显式选择的 OpenAI API 工作流
 
 ### 环境要求
@@ -67,11 +67,15 @@ cp -R skill-package/story-to-handdrawn-video ~/.claude/skills/
 cp -R skill-package/story-to-handdrawn-video ~/.agents/skills/
 ```
 
-3. 告诉 Skill 渲染器项目在哪里(在渲染器项目目录内运行 Agent 时可省略):
+3. 告诉 Skill 渲染器项目在哪里，并为当前视频指定一个项目外的工作目录：
 
 ```bash
 export STORY_VIDEO_PROJECT=/absolute/path/to/story-to-handdrawn-video
+export STORY_VIDEO_WORKSPACE=/absolute/path/to/current-video-task
+mkdir -p "$STORY_VIDEO_WORKSPACE"
 ```
+
+渲染器仓库只保存代码、字体、风格配置和默认示例；当前任务的 storyboard、图片、提示词、TTS 缓存和视频全部写入 `STORY_VIDEO_WORKSPACE`。也可以在每条命令上显式传 `--workspace /absolute/task`。生产任务不要把渲染器仓库本身用作 workspace。
 
 ### 使用方法(Codex Skill 示例)
 
@@ -91,11 +95,11 @@ export STORY_VIDEO_PROJECT=/absolute/path/to/story-to-handdrawn-video
 使用 $story-to-handdrawn-video 把 /absolute/story.txt 生成手绘动画,标题叫「纸上的夏天」。
 ```
 
-**历史故事 / 悬疑案件 → 16:9 黑白动态漫**：
+**历史故事 / 悬疑案件 → 3:4 竖屏黑白动态漫**：
 
 ```text
 使用 $story-to-handdrawn-video 的 ink-comic 模式，把 /absolute/story.txt
-做成 16:9 黑白历史动态漫；只在关键线索上保留一处朱红色。
+做成 3:4 竖屏黑白历史动态漫；只在关键线索上保留一处朱红色。
 ```
 
 **上传图片 → 手绘动画**(图片按播放顺序给出):
@@ -112,7 +116,7 @@ export STORY_VIDEO_PROJECT=/absolute/path/to/story-to-handdrawn-video
 /absolute/01.jpg /absolute/02.jpg
 ```
 
-**先出预览**(`diary` 为 720×960，`ink-comic` 为 1280×720；确认后再出正式版):
+**先出预览**（三种模式均为 720×960；确认后再出正式版）:
 
 ```text
 使用 $story-to-handdrawn-video 先给这个故事生成一个预览版。
@@ -121,6 +125,7 @@ export STORY_VIDEO_PROJECT=/absolute/path/to/story-to-handdrawn-video
 使用建议:
 
 - 故事文本默认一个完整句子一个节拍;想控制节奏,直接在故事里按句分行即可。
+- 可复用的独立视觉风格放在 `config/style-profiles/<id>.json`，并用 `--style-profile <id>` 选择；也可传项目相对路径或绝对 JSON 路径。完整字段契约见 `config/style-profile.schema.json`。
 - 需要精确的一行一镜时，使用 `--scene-contract` 并让 `visual-plan.json` 从 `01` 起连续覆盖全部非空行：长旁白保持在该镜内，不再被自动子句切分；每镜必须提供 1–3 行 `caption` 和 2–15 秒 `duration_sec`，从而把"完整旁白"和"可读字幕"分开。`ink-comic` 的正式字幕随后从最终 TTS 配置逐句回填。未显式启用时仍使用原有自动分句。
 - 新集只需新增某个角色时，把"本集新角色参考图"的窄范围描述放进独立文件并传给 `--character-reference-prompt`；完整的 `--character-lock` 仍负责全剧连续性，但不会把其中提到的所有旧角色都画进新参考图。
 - 并行制作多集时，为每集同时指定独立的 `--output /episode/storyboard.json` 与 `--manifest /episode/codex-image-jobs.json`；manifest 会绑定该 storyboard，避免后生成的集数覆盖前集 import 目标。
@@ -128,6 +133,35 @@ export STORY_VIDEO_PROJECT=/absolute/path/to/story-to-handdrawn-video
 - 遇到时间跳跃、指代不明、医疗场景或年龄敏感角色时,建议先让 Agent 给出视觉规划(两位场景编号为键的 JSON),确认后再生成。
 - 默认使用 Codex Image2 生成图片;只有明确要求时才会走 OpenAI API(需 `OPENAI_API_KEY`)。
 - 先验收静音视觉预览，再冻结连续配音文案；`ink-comic` 回填逐字字幕后才渲染正式静音画面母版。不要用逐镜头 TTS 或逐句变速。
+
+独立风格 profile 会把 `style_overrides` 深合并到 `base_mode` 对应的
+`config/styles.json` 配置中。未传 `--visual-mode` 时自动采用
+`base_mode`；若显式传入不一致的模式会直接报错。场景视觉规划中的
+`accent` 优先于 profile，命令行 `--series-title`、`--cover-title`、
+`--cover-background` 等封面参数优先于 profile 默认值。生成的
+storyboard 和图片任务 manifest 都会记录 profile 的 id、路径与
+schema 版本，profile 内容也会参与素材集哈希，避免不同风格误用同一套图。
+
+```bash
+# 按 config/style-profiles/celadon-kiln-scroll.json 查找
+npm run story -- \
+  --input /absolute/story.txt \
+  --style-profile celadon-kiln-scroll \
+  --output episodes/song-ceramics/storyboard.json \
+  --manifest episodes/song-ceramics/codex-image-jobs.json
+
+# 也可以直接使用路径；显式封面背景覆盖 profile 默认值
+python3 scripts/run_story_video.py \
+  --input /absolute/story.txt \
+  --style-profile /absolute/custom-profile.json \
+  --cover-background '#253247'
+```
+
+profile 的 `episode_defaults.accent` 与 `cover` 必填，颜色统一使用
+`#RRGGBB`。想完全建立新视觉语言时，可在
+`style_overrides.scenePrompt.needsStyleRefs` 中设为 `false`，避免场景任务
+引用仓库内置的日记漫画参考图；角色参考图是否使用内置参考仍由
+`style_overrides.characterRef.needsStyleRefs` 独立控制。
 
 异步工作流遵循依赖关系，而不是把所有步骤同时启动：
 
@@ -165,7 +199,7 @@ npm run release -- \
 npm run release:batch -- examples/batch.example.json --jobs 2 --tts-jobs 3
 ```
 
-如果希望命令立即返回、后台继续工作，使用异步作业入口。它会把状态和日志写到 `.work/jobs/<job-id>/`；失败后 `resume` 会复用已经通过内容哈希验证的 TTS、画面和封面产物，从最近可用阶段继续：
+如果希望命令立即返回、后台继续工作，使用异步作业入口。它会把状态和日志写到 `$STORY_VIDEO_WORKSPACE/.work/jobs/<job-id>/`；失败后 `resume` 会复用已经通过内容哈希验证的 TTS、画面和封面产物，从最近可用阶段继续：
 
 ```bash
 npm run job -- submit \
@@ -180,7 +214,28 @@ npm run job -- log <job-id>
 npm run job -- resume <job-id>
 ```
 
-渲染前只会把当前 storyboard 引用的字体和素材暂存到 `.work/render/`，不会再把整个历史素材库打进 Remotion bundle。清理 30 天前且没有被任何当前 storyboard 引用的素材时，先预览再确认：
+需要先验收 45–60 秒代表性样片时，可以从完整分镜、图片 manifest 和配音
+配置裁出一个互相绑定的独立 pilot；它只写新的 JSON，不复制原始图片：
+
+```bash
+npm run pilot -- \
+  --storyboard episodes/s01-e01/storyboard.json \
+  --manifest episodes/s01-e01/codex-image-jobs.json \
+  --voiceover episodes/s01-e01/voiceover.json \
+  --target-sec 60 \
+  --output-dir episodes/s01-e01/pilot
+```
+
+如果 Codex 内置图片工具没有留下通常的生成图片目录，但 rollout JSONL 中仍有
+base64 PNG 结果，可以按 manifest 恢复场景母图；默认拒绝覆盖已有母图：
+
+```bash
+npm run extract:rollout -- \
+  --rollout /absolute/rollout.jsonl \
+  --manifest episodes/s01-e01/codex-image-jobs.json
+```
+
+渲染前只会把当前 storyboard 引用的字体和素材暂存到 `$STORY_VIDEO_WORKSPACE/.work/render/`，不会再把整个历史素材库打进 Remotion bundle。清理 30 天前且没有被任何当前 storyboard 引用的素材时，先预览再确认：
 
 ```bash
 npm run assets:prune
@@ -205,6 +260,24 @@ node scripts/validate-storyboard.mjs /absolute/episode/storyboard.json
 起点、整集总帧数和旁白时间轴均不移动；淡出最多占下一镜的 45%。项目级
 `page-flip` 与任何逐镜 `fade` 属于两个互斥的转场系统，校验器会直接拒绝
 混用。`npm run check` 会同时执行这套通用 layer-plan 边界测试。
+
+批量或高风险制作还可以复用以下安全工具；它们只读取显式输入，不绑定某个
+故事或固定分集目录：
+
+```bash
+npm run reference:apply -- /absolute/episode
+npm run image:plan -- plan --episode episodes/e01 --provider-profile profile.json
+npm run image:register -- --help
+npm run motion:sync -- episodes/e01 --workspace "$PWD"
+npm run contact-sheet -- image-01.png image-02.png --output contact-sheet.png
+npm run renderer:stage -- --renderer-root "$PWD" --storyboard storyboard.json --destination /absolute/stage
+npm run audit:rendered-transitions -- storyboard.json out/e01/silent.mp4 evidence/transitions
+npm run release:assemble -- --help
+```
+
+图片请求编译器不联网，也不会自动把候选图提升为正式母图；外部结果登记器只
+接受已下载图片和无密钥执行回执。发布组装器要求精确文件哈希及人工封面批准，
+并分别保留无封面配音版和有声封面发布版。
 
 如果原始生成图在全分辨率语义审查中已经通过，但背景只是“近白”而非精确
 `#FFFFFF`，先保留原图，再做全画布机械归一化；它不能用于修复裁断、错误
@@ -259,6 +332,8 @@ BGM 是选择项，不是默认项。仅在音乐能稳定情绪、补足长段�
 
 ### 输出契约
 
+下表全部相对于 `STORY_VIDEO_WORKSPACE`，不会写入渲染器仓库。
+
 | 输入 | 模式 | 输出路径 |
 | --- | --- | --- |
 | 故事文本 | 正式 | `out/<episode>/silent.mp4` |
@@ -272,9 +347,9 @@ BGM 是选择项，不是默认项。仅在音乐能稳定情绪、补足长段�
 
 多集并发时必须同时隔离 episode 和 storyboard：
 `npm run render -- --episode s01-e05 --storyboard episodes/s01-e05/storyboard.json`。
-中间产物（TTS 分组、VTT）写入 `.work/<episode>/`。
+中间产物（TTS 分组、VTT）写入 `$STORY_VIDEO_WORKSPACE/.work/<episode>/`。
 
-- 分辨率：`diary`/`essay` 正式版 1080×1440；`ink-comic` 正式版 1920×1080
+- 分辨率：`diary`、`essay`、`ink-comic` 正式版均为 1080×1440
 - 画面母版:H.264,静音
 - 旁白母版:48 kHz / 24-bit PCM / mono，默认约 -16 LUFS、真峰值不高于 -1.5 dBTP
 - 发布版:H.264 + 48 kHz stereo AAC；封面时段可听，主画面与故事旁白同一时刻开始
@@ -291,8 +366,7 @@ Skill 的完整行为约定见 [skill-package/story-to-handdrawn-video/SKILL.md]
 ├── examples/               # 示例故事文本
 ├── references/             # 黑白/彩色风格参考图
 ├── public/                 # 字体与素材(generated/ 为运行时产物)
-├── storyboard.json         # 默认文本故事分镜示例
-├── storyboard.uploaded.json # 上传图片分镜示例
+├── storyboard.json         # 默认手绘故事分镜示例
 └── DESIGN.md               # 设计说明
 ```
 
@@ -314,7 +388,7 @@ Skill 的完整行为约定见 [skill-package/story-to-handdrawn-video/SKILL.md]
 
 ## English
 
-Convert story copy—or ordered images—into either a 3:4 vertical **hand-drawn diary comic** or a 16:9 **monochrome historical motion comic / case-file theater**. Both modes include motivated continuous motion, an audible non-white cover, connected narration groups, and delivery QC. Built on [Remotion](https://www.remotion.dev/) and FFmpeg; it preserves separate silent-picture, voiced-review, and public-release masters.
+Convert story copy—or ordered images—into 3:4 vertical **hand-drawn diary comics**, **literary essay videos**, or **monochrome historical motion comics / case-file theater**. All modes include motivated continuous motion, an audible non-white cover, connected narration groups, and delivery QC. Built on [Remotion](https://www.remotion.dev/) and FFmpeg; it preserves separate silent-picture, voiced-review, and public-release masters.
 
 This repo contains:
 
@@ -352,11 +426,15 @@ cp -R skill-package/story-to-handdrawn-video ~/.claude/skills/
 cp -R skill-package/story-to-handdrawn-video ~/.agents/skills/
 ```
 
-3. Point the skill at the renderer project (skip when the agent runs inside it):
+3. Point the skill at the renderer and choose an external workspace for the current video:
 
 ```bash
 export STORY_VIDEO_PROJECT=/absolute/path/to/story-to-handdrawn-video
+export STORY_VIDEO_WORKSPACE=/absolute/path/to/current-video-task
+mkdir -p "$STORY_VIDEO_WORKSPACE"
 ```
+
+The renderer repository is read-only infrastructure for production tasks. Storyboards, prompts, generated images, caches, audio, and videos are written under `STORY_VIDEO_WORKSPACE`; pass `--workspace` explicitly when you do not want to use the environment variable. Do not use the renderer repository itself as a production workspace.
 
 ### Usage (Codex skill examples)
 
@@ -384,7 +462,7 @@ Page-flip effect (uploaded pages shown untouched, curled from the bottom-right c
 /absolute/01.jpg /absolute/02.jpg
 ```
 
-Preview first (720×960 for `diary`, 1280×720 for `ink-comic`, before committing to a full render):
+Preview first (720×960 for every visual mode, before committing to a full render):
 
 ```text
 使用 $story-to-handdrawn-video 先给这个故事生成一个预览版。
@@ -392,9 +470,20 @@ Preview first (720×960 for `diary`, 1280×720 for `ink-comic`, before committin
 
 Notes: one complete sentence per beat by default; Codex Image2 is the default image generator. For exact one-line-per-scene planning, pass `--scene-contract` with a consecutive `01..NN` visual plan covering every non-empty source line. Each entry must include a 1–3 line `caption` and `duration_sec` in `2..15`; without the flag, the established automatic sentence splitter remains active. Keep the full spoken thought in the source line and the shorter screen copy in `caption`. Procedural `code` plates are draft-only and require the explicit `--allow-code-plates` opt-in; final storyboards should use semantically reviewed raster or SVG artwork. In `ink-comic`, freeze the final voiceover config and run `scripts/apply_verbatim_subtitles.py` before the final render so the bottom transcript matches the actual TTS; the shorter planning caption is retained only as `summary_text`. When an episode introduces only one new recurring character, pass a narrow brief with `--character-reference-prompt`; the broader `--character-lock` remains continuity context and no longer expands the reference-sheet cast. For parallel episodes, pair an episode-specific `--output` with its `--manifest` so later planning cannot redirect an earlier import. Preserve and inspect every untouched illustration original. If a semantic PASS has only a near-white generated field, `scripts/normalize-illustration-master.py` may perform whole-frame normalization, uniform downscale, and exact-white centering; it must never rescue a cropped, semantically wrong, or identity-leaking image, and the derivative must still pass `scripts/audit-illustration-masters.py`. Before import or preview, run `python3 scripts/audit_motion_timeline.py <timeline> --expected-duration <seconds>` and the renderer's storyboard validator. During planning only, `validate-storyboard.mjs --allow-missing-assets <storyboard>` checks structure before illustrations exist; omit that flag for every import, preview, and delivery gate. The audit deliberately accepts only the same seven motions as the renderer: `hold`, `push_soft`, `push_left`, `push_right`, `pull_soft`, `pan_left`, and `pan_right`. Approve the silent master first, then use `scripts/build_story_audio.py` with an episode config. Narration is synthesized as connected acts; VTT timestamps measure sync but never cut prose into sentence clips.
 
-Use `--jobs 4` for independent image import and connected-group TTS work. The generated Codex manifest declares a dependency graph: reference jobs run first, then scene jobs may run in parallel. Per-episode Remotion rendering remains at `concurrency=1`; parallelize isolated episodes instead. `npm run release -- ...` builds one audited release, while `npm run release:batch -- examples/batch.example.json --jobs 2` runs isolated episodes concurrently. Rendering stages only assets referenced by the selected storyboard under `.work/render/`.
+Reusable visual profiles live at `config/style-profiles/<id>.json` and are
+selected with `--style-profile <id>`; absolute and project-relative JSON paths
+are also accepted. The contract is documented by
+`config/style-profile.schema.json`. A profile deep-merges `style_overrides`
+into its `base_mode`, supplies the default scene accent and cover palette, and
+is traced in both storyboard and image-job manifest. Explicit CLI cover values
+and per-scene visual-plan accents win. Omit `--visual-mode` to use the
+profile's base mode; an explicit conflicting mode is rejected. Set
+`style_overrides.scenePrompt.needsStyleRefs` to `false` when a custom diary
+profile should not inherit the bundled diary-comic reference images.
 
-For non-blocking operation, use `npm run job -- submit ...`. It returns a job ID immediately while the detached worker continues in the background. Inspect it with `job -- status`, `job -- log`, or `job -- list`; use `job -- resume` after a failure. State and logs live under `.work/jobs/<job-id>/`, and resumptions reuse content-hash-validated TTS plus current render artifacts.
+Use `--jobs 4` for independent image import and connected-group TTS work. The generated Codex manifest declares a dependency graph: reference jobs run first, then scene jobs may run in parallel. Per-episode Remotion rendering remains at `concurrency=1`; parallelize isolated episodes instead. `npm run release -- ...` builds one audited release, while `npm run release:batch -- examples/batch.example.json --jobs 2` runs isolated episodes concurrently. Rendering stages only assets referenced by the selected storyboard under `$STORY_VIDEO_WORKSPACE/.work/render/`.
+
+For non-blocking operation, use `npm run job -- submit ...`. It returns a job ID immediately while the detached worker continues in the background. Inspect it with `job -- status`, `job -- log`, or `job -- list`; use `job -- resume` after a failure. State and logs live under `$STORY_VIDEO_WORKSPACE/.work/jobs/<job-id>/`, and resumptions reuse content-hash-validated TTS plus current render artifacts.
 
 Per-scene transitions use a strict contract. A missing
 `transition_to_next` means `cut`. A `fade` uses
@@ -406,7 +495,18 @@ Project-level `page-flip` and per-scene `fade` are mutually exclusive and the
 validator rejects a mixed timeline. `npm run check` includes the generic
 layer-plan boundary tests.
 
+Reusable safety tools are also available for batch or high-risk production:
+`reference:apply`, `image:plan`, `image:register`, `motion:sync`,
+`contact-sheet`, `renderer:stage`, `audit:rendered-transitions`, and
+`release:assemble`. They consume explicit paths and do not bind the renderer to
+one story or episode tree. The image request compiler performs no network calls
+or master promotion; result registration requires downloaded media and a
+secret-free receipt; strict release assembly requires exact hashes and recorded
+human cover approval.
+
 ### Outputs
+
+Every path below is relative to `STORY_VIDEO_WORKSPACE`, not the renderer repository.
 
 | Input | Mode | Path |
 | --- | --- | --- |
@@ -417,9 +517,9 @@ layer-plan boundary tests.
 | Narrated review | no cover | `out/<episode>/voiced/preview.mp4` |
 | Public release | audible cover | `out/<episode>/voiced/release.mp4` · `out/releases/<episode>.mp4` (quick-find copy) |
 
-For multi-episode isolation, pass both `--episode` and `--storyboard`. Intermediates (TTS groups, VTT, scoped render assets) reside under `.work/`.
+For multi-episode isolation, pass both `--episode` and `--storyboard`. Intermediates (TTS groups, VTT, scoped render assets) reside under `$STORY_VIDEO_WORKSPACE/.work/`.
 
-Final picture is 1080×1440 H.264 in `diary`/`essay` mode or 1920×1080 in `ink-comic`; previews follow the same aspect ratio. Narration defaults to a 48 kHz PCM master around -16 LUFS and a stereo AAC release. The full behavior contract lives in [SKILL.md](skill-package/story-to-handdrawn-video/SKILL.md).
+Final picture is 1080×1440 H.264 in every visual mode; previews keep the same 3:4 aspect ratio. Narration defaults to a 48 kHz PCM master around -16 LUFS and a stereo AAC release. The full behavior contract lives in [SKILL.md](skill-package/story-to-handdrawn-video/SKILL.md).
 
 ### License
 

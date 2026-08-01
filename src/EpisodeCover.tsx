@@ -1,10 +1,15 @@
-import {AbsoluteFill, Img, staticFile} from 'remotion';
+import {AbsoluteFill, Img, staticFile, useVideoConfig} from 'remotion';
+import {inkComicCoverFilter} from './inkComicColorGrade';
 import {storyboard} from './storyboard';
 
 const InkComicCover: React.FC = () => {
+  const {width, height} = useVideoConfig();
+  const portrait = height > width;
   const cover = storyboard.project.cover || {};
   const firstScene = storyboard.scenes[0];
-  const title = cover.title || storyboard.project.title;
+  const parsed = splitTitle(storyboard.project.title);
+  const title = cover.title || parsed.title;
+  const episodeLabel = cover.episode_label || parsed.chapter || '故事篇章';
   const titleLines = balancedInkTitleLines(title);
   const longestTitleLine = Math.max(
     ...titleLines.map((line) => Array.from(line).length),
@@ -18,6 +23,95 @@ const InkComicCover: React.FC = () => {
         : Math.max(82, Math.floor(680 / longestTitleLine));
   const background = cover.background || '#171717';
   const accent = cover.accent || '#A93B32';
+  const colorGrade = storyboard.project.color_grade || firstScene.color_grade;
+
+  if (portrait) {
+    return (
+      <AbsoluteFill
+        style={{
+          backgroundColor: background,
+          color: '#F4F0E8',
+          fontFamily: 'OriginalDiaryHand, Songti SC, STSong, serif',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background:
+              'linear-gradient(180deg, rgba(12,12,12,0.96) 0%, rgba(12,12,12,0.9) 42%, rgba(12,12,12,0.66) 100%)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            left: 72,
+            right: 72,
+            top: 66,
+            fontSize: 29,
+            letterSpacing: '0.14em',
+            color: '#D8D2C8',
+          }}
+        >
+          {cover.series_title || '黑白故事 · 动态漫'}
+        </div>
+        <div
+          style={{
+            position: 'absolute',
+            left: 70,
+            right: 70,
+            top: 150,
+            borderLeft: `12px solid ${accent}`,
+            paddingLeft: 34,
+          }}
+        >
+          <div style={{fontSize: 40, color: '#CFC7B9', marginBottom: 14}}>
+            {episodeLabel}
+          </div>
+          <div
+            style={{
+              fontSize: Math.min(94, titleFontSize),
+              lineHeight: 1.08,
+              letterSpacing: '0.025em',
+              textShadow: '0 5px 18px rgba(0,0,0,0.86)',
+            }}
+          >
+            {titleLines.map((line, index) => (
+              <div key={`${index}-${line}`} style={{whiteSpace: 'nowrap'}}>
+                {line}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div
+          style={{
+            position: 'absolute',
+            left: 56,
+            right: 56,
+            top: 560,
+            bottom: 68,
+            backgroundColor: '#151515',
+            border: `4px solid ${accent}`,
+            boxShadow: '0 22px 60px rgba(0,0,0,0.44)',
+            overflow: 'hidden',
+          }}
+        >
+          {firstScene.assets.color ? (
+            <Img
+              src={staticFile(firstScene.assets.color)}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                filter: inkComicCoverFilter(colorGrade, true),
+              }}
+            />
+          ) : null}
+        </div>
+      </AbsoluteFill>
+    );
+  }
 
   return (
     <AbsoluteFill
@@ -37,7 +131,7 @@ const InkComicCover: React.FC = () => {
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            filter: 'grayscale(0.74) contrast(1.18) brightness(0.67)',
+            filter: inkComicCoverFilter(colorGrade, false),
           }}
         />
       ) : null}
@@ -70,7 +164,7 @@ const InkComicCover: React.FC = () => {
         }}
       >
         <div style={{fontSize: 52, color: '#CFC7B9', marginBottom: 16}}>
-          {cover.episode_label || '故事篇章'}
+          {episodeLabel}
         </div>
         <div
           style={{

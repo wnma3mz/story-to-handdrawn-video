@@ -3,7 +3,7 @@ import {dirname, isAbsolute, relative, resolve, sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const publicRoot = resolve(root, 'public');
+const bundledPublicRoot = resolve(root, 'public');
 
 const parseArgs = (tokens) => {
   const parsed = {};
@@ -23,6 +23,8 @@ const parseArgs = (tokens) => {
 };
 
 const args = parseArgs(process.argv.slice(2));
+const publicRoot = resolve(String(args['asset-root'] || bundledPublicRoot));
+const workRoot = resolve(String(args['work-root'] || resolve(root, '.work')));
 const episode = String(args.episode || process.env.EPISODE || 'default');
 if (!/^[\p{Letter}\p{Number}._-]+$/u.test(episode)) {
   throw new Error('--episode may contain only letters, numbers, dots, underscores, and hyphens');
@@ -41,10 +43,10 @@ if (!/^[A-Za-z0-9._-]+$/.test(stageKey)) {
   throw new Error('--stage-key may contain only ASCII letters, numbers, dots, underscores, and hyphens');
 }
 
-const stageRoot = resolve(root, '.work/render', `${episode}-${stageKey}`);
+const stageRoot = resolve(workRoot, 'render', `${episode}-${stageKey}`);
 const stagedPublic = resolve(stageRoot, 'public');
 const storyboard = JSON.parse(readFileSync(storyboardPath, 'utf8'));
-const selected = new Set(['fonts']);
+const selected = new Set();
 
 for (const scene of storyboard.scenes || []) {
   for (const value of Object.values(scene.assets || {})) {
@@ -55,9 +57,24 @@ for (const scene of storyboard.scenes || []) {
 rmSync(stageRoot, {recursive: true, force: true});
 mkdirSync(stagedPublic, {recursive: true});
 
+const workspaceFonts = resolve(publicRoot, 'fonts');
+const bundledFonts = resolve(bundledPublicRoot, 'fonts');
+const fontsSource = existsSync(workspaceFonts) ? workspaceFonts : bundledFonts;
+if (existsSync(fontsSource)) {
+  cpSync(fontsSource, resolve(stagedPublic, 'fonts'), {recursive: true});
+}
+
 for (const item of selected) {
-  const source = isAbsolute(item) ? item : resolve(publicRoot, item);
-  const publicRelative = relative(publicRoot, source);
+  let source = isAbsolute(item) ? item : resolve(publicRoot, item);
+  let sourceRoot = publicRoot;
+  if (!existsSync(source) && !isAbsolute(item)) {
+    const bundledSource = resolve(bundledPublicRoot, item);
+    if (existsSync(bundledSource)) {
+      source = bundledSource;
+      sourceRoot = bundledPublicRoot;
+    }
+  }
+  const publicRelative = relative(sourceRoot, source);
   if (
     publicRelative === '..' ||
     publicRelative.startsWith(`..${sep}`) ||

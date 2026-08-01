@@ -14,7 +14,7 @@ const storyboardPath = resolveFromRoot(
 );
 const uploadedStoryboardPath = resolveFromRoot(
   process.env.UPLOADED_STORYBOARD_PATH,
-  'storyboard.uploaded.json',
+  'storyboard.json',
 );
 const publicDir = resolveFromRoot(process.env.REMOTION_PUBLIC_DIR, 'public');
 

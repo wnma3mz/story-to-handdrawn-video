@@ -17,40 +17,26 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
+from story_timeline import compute_scene_timeline
+
 
 def compute_timeline(storyboard: dict) -> tuple[dict[str, dict], float]:
-    scene_list = storyboard["scenes"]
-    fps = int(storyboard["project"]["fps"])
-    overlap = 0.0
-    if storyboard["project"].get("transition") == "page-flip" and len(scene_list) > 1:
-        requested_frames = max(
-            1, round(float(storyboard["project"].get("transition_sec", 0.7)) * fps)
-        )
-        shortest_frames = min(
-            round(float(s["duration_sec"]) * fps) for s in scene_list
-        )
-        overlap = min(requested_frames, max(1, int(shortest_frames * 0.45))) / fps
-
-    scenes: dict[str, dict] = {}
-    cursor = 0.0
-    for index, scene in enumerate(scene_list):
-        scenes[scene["id"]] = {
-            "start_sec": cursor,
-            "end_sec": cursor + float(scene["duration_sec"]),
-        }
-        cursor += float(scene["duration_sec"])
-        if index < len(scene_list) - 1:
-            cursor -= overlap
-    return scenes, cursor
+    return compute_scene_timeline(storyboard)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--storyboard", type=Path, default=Path("storyboard.json")
+    )
+    parser.add_argument(
+        "--workspace",
+        type=Path,
+        help="Task-owned root; defaults to STORY_VIDEO_WORKSPACE or the current directory",
     )
     parser.add_argument(
         "--output", type=Path, default=Path("voiceover.generated.json")
@@ -83,6 +69,19 @@ def main() -> int:
     parser.add_argument("--minimum-final-tail-sec", type=float, default=0.5)
     args = parser.parse_args()
 
+    workspace = (
+        args.workspace
+        or (Path(os.environ["STORY_VIDEO_WORKSPACE"]) if os.environ.get("STORY_VIDEO_WORKSPACE") else None)
+        or Path.cwd()
+    ).expanduser().resolve()
+
+    def workspace_path(path: Path) -> Path:
+        expanded = path.expanduser()
+        return expanded.resolve() if expanded.is_absolute() else (workspace / expanded).resolve()
+
+    args.storyboard = workspace_path(args.storyboard)
+    args.output = workspace_path(args.output)
+
     storyboard = json.loads(args.storyboard.read_text(encoding="utf-8"))
     scenes = storyboard["scenes"]
     if not scenes:
@@ -103,6 +102,7 @@ def main() -> int:
         groups.append({
             "scene_ids": group_scene_ids,
             "speech_text": speech_text,
+            "cue_texts": speech_parts,
         })
 
     cursor = args.initial_head_sec
@@ -116,6 +116,7 @@ def main() -> int:
             "start_sec": round(cursor, 3),
             "whole_group_tempo": 1.0,
             "speech_text": group["speech_text"],
+            "cue_texts": group["cue_texts"],
         })
         cursor += estimated_duration + args.group_gap_sec
 

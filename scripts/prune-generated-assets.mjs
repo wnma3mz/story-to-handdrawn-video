@@ -7,9 +7,21 @@ import {
 } from 'node:fs';
 import {dirname, relative, resolve, sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {resolveWorkspace, resolveWorkspacePath} from './lib/workspace.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const generatedRoot = resolve(root, 'public/assets/generated');
+const workspaceIndex = process.argv.indexOf('--workspace');
+if (
+  workspaceIndex >= 0 &&
+  (!process.argv[workspaceIndex + 1] || process.argv[workspaceIndex + 1].startsWith('--'))
+) {
+  throw new Error('--workspace requires a directory path');
+}
+const workspace = resolveWorkspace(
+  workspaceIndex >= 0 ? {workspace: process.argv[workspaceIndex + 1]} : {},
+  root,
+);
+const generatedRoot = resolveWorkspacePath(workspace, null, 'public/assets/generated');
 const apply = process.argv.includes('--apply');
 const daysIndex = process.argv.indexOf('--keep-days');
 const keepDays = Number(daysIndex >= 0 ? process.argv[daysIndex + 1] : 30);
@@ -18,10 +30,10 @@ if (!Number.isFinite(keepDays) || keepDays < 0) {
 }
 
 const storyboardFiles = [
-  resolve(root, 'storyboard.json'),
-  resolve(root, 'storyboard.uploaded.json'),
+  resolve(workspace, 'storyboard.json'),
+  resolve(workspace, 'storyboard.uploaded.json'),
 ];
-const episodesRoot = resolve(root, 'episodes');
+const episodesRoot = resolve(workspace, 'episodes');
 if (existsSync(episodesRoot)) {
   const collect = (directory) => {
     for (const entry of readdirSync(directory, {withFileTypes: true})) {
@@ -64,9 +76,9 @@ if (existsSync(generatedRoot)) {
 }
 
 for (const candidate of candidates) {
-  const display = relative(root, candidate.path);
+  const display = relative(workspace, candidate.path);
   if (display.startsWith(`..${sep}`)) {
-    throw new Error(`Refusing to prune outside project: ${candidate.path}`);
+    throw new Error(`Refusing to prune outside workspace: ${candidate.path}`);
   }
   console.log(
     `${apply ? 'REMOVE' : 'WOULD_REMOVE'}\t${display}\t${candidate.ageDays.toFixed(1)} days`,

@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "id": "qin-bamboo-noir",
+  "display_name": "秦简宫灯黑色片",
+  "description": "以焦褐竹简、浓墨剪影和摇曳宫灯组织一场封闭空间里的政治惊悚片。三次拒绝不是靠文字呈现，而以三道逐步收紧的朱砂几何印痕和越来越窄的构图表达。适合权力崩塌、密室对话与小人物执行命令的历史故事。",
+  "base_mode": "ink-comic",
+  "recommended_for": [
+    "先秦政治惊悚",
+    "宫廷密室对话",
+    "权力交接与政变",
+    "执行者视角的历史人物",
+    "单夜限时叙事"
+  ],
+  "style_overrides": {
+    "styleLock": "Qin-era bamboo-slip noir illustration, dry black ink and soot wash on fibrous brown paper, hard firelight, restrained cinnabar geometric marks, severe silhouettes, narrow palace corridors, tense negative space, hand-drawn historical graphic novel.",
+    "compositionRule": "Build the episode as a visual funnel: begin with the fractured empire and broad palace exterior, move into deep axial corridors, then compress the final exchange into alternating faces, hands, thresholds, and lamp shadows. Repeat three increasingly tight compositions for three requests. Use bamboo-strip rhythm as vertical divisions without showing readable writing.",
+    "colorRule": "Use soot black, charred bamboo brown, old paper tan, and firelight amber. Cinnabar appears only as three abstract rectangular or circular pressure marks and the faintest edge accent; do not use it as decorative red wash or graphic blood.",
+    "isolationRule": "Isolate people with black negative space, doorway frames, reed-screen shadows, and pools of lamp light. The emperor and the executor should rarely share an unobstructed open frame. Avoid grand battle tableaux, glossy palace fantasy, ornate later-imperial decoration, and crowded court scenes.",
+    "scenePrompt": {
+      "createLine": "Create a hand-drawn Qin dynasty palace-noir scene on fibrous bamboo-paper texture, with dry ink silhouettes, sparse amber lamp light, compressed architecture, psychologically tense staging, and a single decisive action or hesitation.",
+      "constraintsPrefix": "Historically grounded late Qin setting around 207 BCE; plain cross-collar robes, Qin-era armor and weapons, lacquered wood, rammed-earth or timber palace architecture, bamboo slips and oil lamps used only as non-legible visual objects; maintain character continuity and sober facial acting.",
+      "constraintsSuffix": "No words, Chinese characters, seal-script glyphs, letters, numerals, captions, signs, labels, logo, signature, watermark, readable bamboo-slip writing, readable seals, modern objects, paper lanterns, Ming or Qing palace roofs, Hanfu fantasy styling, Japanese samurai elements, medieval armor, firearms, electric light, supernatural effects, explicit stabbing, open wounds, corpses in gore, splatter, or excessive blood."
+    }
+  },
+  "episode_defaults": {
+    "accent": "#A34432",
+    "cover": {
+      "background": "#B5956A",
+      "accent": "#B66A2C",
+      "dark_accent": "#171411"
+    }
+  },
+  "editorial": {
+    "aspect_ratio": "3:4",
+    "target_duration_sec": 270,
+    "target_narration_chars": [
+      1150,
+      1550
+    ],
+    "visual_motifs": [
+      "三次逐渐加重的无字朱砂印痕",
+      "宫灯下拉长的执刀者影子",
+      "层层门框和越来越窄的寝宫",
+      "断裂竹简与焦黑纸纤维",
+      "握紧又松开的手和无人回应的门"
+    ],
+    "avoid": [
+      "把阎乐拍成英雄或纯粹恶人",
+      "用战争大场面挤压核心对话",
+      "以血腥弑君画面替代心理张力",
+      "出现汉唐明清服饰和宫殿",
+      "把抽象朱砂印痕画成可读文字"
+    ],
+    "motion_preferences": [
+      "镜头沿宫门轴线缓慢向内推进",
+      "三次请求分别缩短推镜距离并加深阴影",
+      "火焰和帘影轻微晃动而人物尽量静止",
+      "用竹简合拢或门框遮挡完成硬切",
+      "事后以灯灭、空门和史书留白长停收尾"
+    ],
+    "narration_tone": "克制、低声、步步收紧；像复盘一份没有完整证词的夜间案卷，允许不确定性，拒绝替人物轻易判决。"
+  }
+}

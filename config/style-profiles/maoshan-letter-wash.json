@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "id": "maoshan-letter-wash",
+  "display_name": "茅山空笺青绿",
+  "description": "以南朝小青绿山水、淡墨留白和一张无字空笺表现友人之间未说尽的回答。朝廷场景是拥挤的灰褐直线，茅山场景是透气的青绿曲线；信纸在二者之间往返。适合书信、隐逸选择、文人友谊与山水散文。",
+  "base_mode": "essay",
+  "recommended_for": [
+    "古代书信与文人关系",
+    "山水散文和诗意非虚构",
+    "出仕与隐逸的人生选择",
+    "低冲突但有内在张力的人物故事",
+    "围绕一件纸本文物展开的叙事"
+  ],
+  "style_overrides": {
+    "styleLock": "Southern Dynasties-inspired light blue-green landscape painting, translucent ink wash, mineral azurite and malachite touches, warm blank xuan-paper space, fine pale umber figure lines, quiet mist, an unmarked letter sheet as recurring motif, restrained and airy rather than decorative.",
+    "compositionRule": "Alternate two spatial grammars: the court uses compressed vertical columns, screens, desks, document stacks, and narrow margins; Maoshan uses diagonal peaks, open water, mist, bamboo, birds, and generous unpainted paper. Let a blank folded letter bridge the spaces. Human figures remain small enough for landscape and choice to dominate, but hands and expressions become clear in intimate letter scenes.",
+    "colorRule": "Use warm paper white, pale ink gray, mist blue, bamboo green, mineral teal, and a restrained clay-brown for court interiors. Keep the court desaturated; allow blue-green to bloom only as the mountain answer opens. Avoid brilliant jewel tones and pure digital white.",
+    "isolationRule": "Isolate subjects through untouched paper, mist bands, window openings, desk planes, and sparse fine lines. Preserve at least one calm area of negative space in every scene. Do not fill that space with decorative calligraphy, stamps, interface elements, or patterned wallpaper.",
+    "scenePrompt": {
+      "createLine": "Create a hand-painted Southern Dynasties blue-green ink-wash scene on warm paper, balancing a small human decision against spacious mountain mist, with an unmarked folded letter as the recurring bridge and subtle contrast between compressed court life and open Maoshan air.",
+      "constraintsPrefix": "Historically grounded fifth- to sixth-century southern China; restrained Southern Dynasties cross-collar robes, simple official caps where appropriate, timber halls, low desks, bamboo or paper documents, mountain hermitage, bamboo groves, streams, birds, and fish; lyrical but materially believable; all paper surfaces remain blank and non-legible.",
+      "constraintsSuffix": "No words, Chinese characters, calligraphy, letters, numerals, captions, signs, labels, logo, signature, watermark, red collector seals, readable documents, modern stationery, fountain pens, ballpoint pens, glass office towers, Tang or Ming court costume, Qing queues, Japanese shrine elements, fantasy immortals, glowing magic, palace opulence, gore, wounds, or blood."
+    }
+  },
+  "episode_defaults": {
+    "accent": "#4E887A",
+    "cover": {
+      "background": "#E9E1CF",
+      "accent": "#5D8D83",
+      "dark_accent": "#394D48"
+    }
+  },
+  "editorial": {
+    "aspect_ratio": "3:4",
+    "target_duration_sec": 270,
+    "target_narration_chars": [
+      1050,
+      1450
+    ],
+    "visual_motifs": [
+      "在朝廷与茅山间往返的无字折笺",
+      "宫门狭缝和山谷云隙的形态呼应",
+      "清流见底、青林翠竹、晨雾与落日鱼影",
+      "挂起的朝服和留在案头的公文",
+      "人物很小而白云占据大片留白"
+    ],
+    "avoid": [
+      "直接生成古文或伪书法",
+      "把陶弘景神化为腾云驾雾的仙人",
+      "把两种人生写成简单胜负",
+      "混入唐宋明清建筑服饰",
+      "用过密青绿装饰破坏呼吸感"
+    ],
+    "motion_preferences": [
+      "以空笺翻折和展开完成时空过渡",
+      "从拥挤案头缓慢拉远至茅山大留白",
+      "让晨雾、竹影、鸟群和水纹做极轻运动",
+      "沿溪流或山脊作舒缓的斜向平移",
+      "结尾停在白云与未赠出的空笺上"
+    ],
+    "narration_tone": "清澈、温柔、略带自问；区分史实与推测，不替谢征编造确定心声，让山水成为回答而不是鸡汤。"
+  }
+}

@@ -1,39 +1,19 @@
-import {
-  AbsoluteFill,
-  interpolate,
-  useCurrentFrame,
-  useVideoConfig,
-} from 'remotion';
+import {AbsoluteFill, useVideoConfig} from 'remotion';
 import {MotionStage} from './MotionStage';
+import {
+  inkComicBottomGradient,
+  inkComicSceneFilter,
+  inkComicSubtitleBackground,
+} from './inkComicColorGrade';
 import {resolvePlateMode, sceneHasIllustrationPlate} from './plateMode';
 import {ScenePlate} from './ScenePlate';
 import type {SceneData} from './types';
 
 const safeAccent = (scene: SceneData) => scene.accent || '#A93B32';
 
-const sceneTreatment = (kind: SceneData['scene_kind']) => {
-  switch (kind) {
-    case 'host':
-      return 'grayscale(0.82) contrast(1.15) brightness(0.9)';
-    case 'evidence':
-      return 'grayscale(0.72) contrast(1.19) brightness(0.94) sepia(0.08)';
-    case 'map':
-      return 'grayscale(0.8) contrast(1.13) brightness(0.95) sepia(0.1)';
-    default:
-      return 'grayscale(0.72) contrast(1.16) brightness(0.93)';
-  }
-};
-
 export const InkComicScene: React.FC<{scene: SceneData}> = ({scene}) => {
-  const frame = useCurrentFrame();
-  const {fps} = useVideoConfig();
-  const totalFrames = Math.max(1, Math.round(scene.duration_sec * fps));
-  const fadeIn = scene.visual_interval_start === false
-    ? 1
-    : interpolate(frame, [0, Math.min(8, totalFrames * 0.12)], [0, 1], {
-        extrapolateLeft: 'clamp',
-        extrapolateRight: 'clamp',
-      });
+  const {width, height} = useVideoConfig();
+  const portrait = height > width;
   // Verbatim subtitles are timing evidence, not decorative cards.  They must
   // appear on the first frame of the machine scene that starts the TTS cue.
   const captionIn = 1;
@@ -56,10 +36,10 @@ export const InkComicScene: React.FC<{scene: SceneData}> = ({scene}) => {
           style={{
             position: 'absolute',
             zIndex: 2,
-            right: 86,
-            top: -116,
+            right: portrait ? 38 : 86,
+            top: portrait ? -48 : -116,
             color: '#DED9CE',
-            fontSize: 590,
+            fontSize: portrait ? 430 : 590,
             lineHeight: 1,
             opacity: 0.09,
             transform: 'rotate(-4deg)',
@@ -70,20 +50,44 @@ export const InkComicScene: React.FC<{scene: SceneData}> = ({scene}) => {
         </div>
       ) : null}
 
+      {portrait ? (
+        <div
+          style={{
+            position: 'absolute',
+            zIndex: 3,
+            left: 34,
+            right: 34,
+            top: 146,
+            bottom: 450,
+            backgroundColor: '#222220',
+            border: `3px solid ${accent}99`,
+            boxShadow: '0 18px 48px rgba(0,0,0,0.36)',
+          }}
+        />
+      ) : null}
+
       {hasPlate ? (
         <MotionStage scene={scene}>
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              filter: plateMode === 'raster' ? sceneTreatment(scene.scene_kind) : undefined,
-              opacity: fadeIn,
+              filter:
+                plateMode === 'raster'
+                  ? inkComicSceneFilter(scene.color_grade, scene.scene_kind)
+                  : undefined,
+              // SceneTransitionStoryVideo owns cuts and fades. Keeping the
+              // plate opaque prevents a second scene-local fade from creating
+              // a black flash on every machine-scene boundary.
+              opacity: 1,
             }}
           >
             <ScenePlate
               scene={scene}
               monochrome
-              objectFit={plateMode === 'raster' ? 'cover' : 'contain'}
+              objectFit={
+                plateMode !== 'raster' ? 'contain' : 'cover'
+              }
             />
           </div>
         </MotionStage>
@@ -92,8 +96,7 @@ export const InkComicScene: React.FC<{scene: SceneData}> = ({scene}) => {
       <AbsoluteFill
         style={{
           zIndex: 25,
-          background:
-            'linear-gradient(180deg, rgba(12,12,12,0.04) 48%, rgba(12,12,12,0.84) 100%)',
+          background: inkComicBottomGradient(scene.color_grade, portrait),
           pointerEvents: 'none',
         }}
       />
@@ -103,10 +106,10 @@ export const InkComicScene: React.FC<{scene: SceneData}> = ({scene}) => {
           style={{
             position: 'absolute',
             zIndex: 32,
-            left: 56,
-            top: 48,
+            left: portrait ? 48 : 56,
+            top: portrait ? 62 : 48,
             color: '#F3EEE4',
-            fontSize: 35,
+            fontSize: portrait ? 31 : 35,
             letterSpacing: '0.12em',
             textShadow: '0 2px 8px rgba(0,0,0,0.85)',
             display: 'flex',
@@ -132,9 +135,9 @@ export const InkComicScene: React.FC<{scene: SceneData}> = ({scene}) => {
           style={{
             position: 'absolute',
             zIndex: 40,
-            left: 92,
-            right: 92,
-            bottom: 38,
+            left: portrait ? 58 : 92,
+            right: portrait ? 58 : 92,
+            bottom: portrait ? 56 : 38,
             display: 'flex',
             justifyContent: 'center',
             opacity: captionIn,
@@ -142,14 +145,21 @@ export const InkComicScene: React.FC<{scene: SceneData}> = ({scene}) => {
         >
           <div
             style={{
-              maxWidth: 1620,
-              padding: '11px 30px 14px',
+              maxWidth: portrait ? 940 : 1620,
+              padding: portrait ? '20px 30px 24px' : '11px 30px 14px',
               color: '#F8F5EE',
-              backgroundColor: 'rgba(10,10,10,0.7)',
+              backgroundColor: inkComicSubtitleBackground(
+                scene.color_grade,
+                portrait,
+              ),
               borderBottom: `4px solid ${accent}`,
-              fontFamily: 'Songti SC, STSong, serif',
-              fontSize: subtitleFontSize,
-              lineHeight: 1.26,
+              // Songti is preferred locally; the bundled font prevents tofu
+              // glyphs in minimal Linux/Chromium render containers.
+              fontFamily: 'Songti SC, STSong, OriginalDiaryHand, serif',
+              fontSize: portrait
+                ? Math.min(44, subtitleFontSize + 2)
+                : subtitleFontSize,
+              lineHeight: portrait ? 1.38 : 1.26,
               letterSpacing: '0.025em',
               textAlign: 'center',
               whiteSpace: 'pre-line',

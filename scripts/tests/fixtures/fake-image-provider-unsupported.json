@@ -1,0 +1,16 @@
+{
+  "schema": "image-provider-capability/v1",
+  "provider_id": "fake-insufficient-reference-provider",
+  "max_reference_images": 1,
+  "reference_order_preserved": false,
+  "labeled_references": false,
+  "accepted_input_formats": [
+    "image/jpeg"
+  ],
+  "minimum_input_edge_px": 2048,
+  "supported_output_formats": [
+    "image/jpeg"
+  ],
+  "maximum_output_edge_px": 1024,
+  "square_output": false
+}

@@ -15,8 +15,15 @@ from pathlib import Path
 
 
 PROJECT = Path(__file__).resolve().parents[1]
-JOB_ROOT = PROJECT / ".work" / "jobs"
+WORKSPACE = Path(os.environ.get("STORY_VIDEO_WORKSPACE", PROJECT)).expanduser().resolve()
+JOB_ROOT = WORKSPACE / ".work" / "jobs"
 JOB_ID = re.compile(r"^[A-Za-z0-9._-]+$")
+
+
+def configure_workspace(value: Path | None) -> None:
+    global WORKSPACE, JOB_ROOT
+    WORKSPACE = (value or WORKSPACE).expanduser().resolve()
+    JOB_ROOT = WORKSPACE / ".work" / "jobs"
 
 
 def now() -> str:
@@ -61,7 +68,14 @@ def launch(job_id: str) -> dict:
     patch_state(job_id, status="queued", stage="queued")
     with log_path.open("a", encoding="utf-8") as log:
         process = subprocess.Popen(
-            [sys.executable, str(Path(__file__).resolve()), "run", job_id],
+            [
+                sys.executable,
+                str(Path(__file__).resolve()),
+                "run",
+                job_id,
+                "--workspace",
+                str(WORKSPACE),
+            ],
             cwd=PROJECT,
             stdin=subprocess.DEVNULL,
             stdout=log,
@@ -73,6 +87,10 @@ def launch(job_id: str) -> dict:
 
 def submit(args: argparse.Namespace) -> int:
     episode = args.episode
+    if not re.fullmatch(r"[\w.-]+", episode) or episode in {".", ".."}:
+        raise SystemExit(
+            "--episode may contain only letters, numbers, dots, underscores, and hyphens"
+        )
     if JOB_ROOT.exists():
         for existing_path in JOB_ROOT.glob("*/state.json"):
             existing = json.loads(existing_path.read_text(encoding="utf-8"))
@@ -90,8 +108,10 @@ def submit(args: argparse.Namespace) -> int:
         raise SystemExit(f"job already exists: {job_id}")
     if not 1 <= args.jobs <= 16:
         raise SystemExit("--jobs must stay within 1..16")
-    storyboard = args.storyboard.expanduser().resolve()
-    config = args.config.expanduser().resolve()
+    storyboard = args.storyboard.expanduser()
+    storyboard = storyboard.resolve() if storyboard.is_absolute() else (WORKSPACE / storyboard).resolve()
+    config = args.config.expanduser()
+    config = config.resolve() if config.is_absolute() else (WORKSPACE / config).resolve()
     if not storyboard.is_file():
         raise SystemExit(f"missing storyboard: {storyboard}")
     if not config.is_file():
@@ -105,6 +125,7 @@ def submit(args: argparse.Namespace) -> int:
         "attempts": 0,
         "spec": {
             "episode": episode,
+            "workspace": str(WORKSPACE),
             "storyboard": str(storyboard),
             "config": str(config),
             "jobs": args.jobs,
@@ -134,6 +155,8 @@ def run_job(job_id: str) -> int:
         "scripts/release_story.py",
         "--episode",
         spec["episode"],
+        "--workspace",
+        spec.get("workspace", str(WORKSPACE)),
         "--storyboard",
         spec["storyboard"],
         "--config",
@@ -218,6 +241,7 @@ def parser() -> argparse.ArgumentParser:
 
     submit_parser = commands.add_parser("submit")
     submit_parser.add_argument("--episode", required=True)
+    submit_parser.add_argument("--workspace", type=Path)
     submit_parser.add_argument("--storyboard", type=Path, required=True)
     submit_parser.add_argument("--config", type=Path, required=True)
     submit_parser.add_argument("--jobs", type=int, default=4)
@@ -226,19 +250,25 @@ def parser() -> argparse.ArgumentParser:
 
     run_parser = commands.add_parser("run")
     run_parser.add_argument("job_id")
+    run_parser.add_argument("--workspace", type=Path)
     status_parser = commands.add_parser("status")
     status_parser.add_argument("job_id")
+    status_parser.add_argument("--workspace", type=Path)
     resume_parser = commands.add_parser("resume")
     resume_parser.add_argument("job_id")
+    resume_parser.add_argument("--workspace", type=Path)
     log_parser = commands.add_parser("log")
     log_parser.add_argument("job_id")
     log_parser.add_argument("--lines", type=int, default=80)
-    commands.add_parser("list")
+    log_parser.add_argument("--workspace", type=Path)
+    list_parser = commands.add_parser("list")
+    list_parser.add_argument("--workspace", type=Path)
     return root
 
 
 def main() -> int:
     args = parser().parse_args()
+    configure_workspace(getattr(args, "workspace", None))
     if args.command == "submit":
         return submit(args)
     if args.command == "run":

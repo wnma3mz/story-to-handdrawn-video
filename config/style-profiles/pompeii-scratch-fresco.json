@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "id": "pompeii-scratch-fresco",
+  "display_name": "庞贝刮痕湿壁画",
+  "description": "把古罗马身体史画成受损的庞贝湿壁画：石灰墙底、赭石色块、炭黑刻线和青铜刮擦痕共同构图，暗金色油液作为贯穿叙事的视觉线索。适合讲身体被观看、消费、规训或神化的古典社会故事。",
+  "base_mode": "ink-comic",
+  "recommended_for": [
+    "古希腊罗马社会史",
+    "身体、职业与权力关系",
+    "古代医学和仪式",
+    "带有物件线索的历史调查",
+    "克制表达的黑暗历史"
+  ],
+  "style_overrides": {
+    "styleLock": "Ancient Roman fresco illustration on aged lime plaster, flat mineral-pigment shapes, rough charcoal contour lines, shallow scratched incisions, sparse bronze-gold oil sheen, archaeological rather than cinematic, handmade and imperfect.",
+    "compositionRule": "Use strong fresco-like horizontal registers and asymmetrical figure groups. Keep one tactile object as the visual anchor in every scene, especially the curved bronze strigil, clay jar, oil lamp, arena sand, or mosaic fragment. Favor medium and close shots of hands, tools, skin, vessels, and exchanged goods; reserve wide shots for the bathhouse, training yard, or arena. Figures should feel monumental but not heroic.",
+    "colorRule": "Keep most scenes in pumice beige, Pompeian red, charcoal black, and muted terracotta. Use tarnished bronze gold only on the strigil, oil sheen, jewelry, or traded vessels. Blood, when historically unavoidable, appears only as a tiny dried oxblood accent and never as bright liquid gore.",
+    "isolationRule": "Separate foreground figures from the wall with chipped plaster halos, charcoal shadows, and simple flat silhouettes. Avoid glossy digital depth, photorealistic musculature, crowded spectacle, ornamental borders, and modern poster design.",
+    "scenePrompt": {
+      "createLine": "Create a hand-painted ancient Roman scene as a damaged Pompeian wall fresco scratched by a bronze strigil, with tactile plaster grain, mineral pigments, blunt charcoal contours, restrained human emotion, and one clearly readable object-led story beat.",
+      "constraintsPrefix": "Historically grounded Roman Republic or Imperial-era material culture appropriate to the narrated date; authentic tunics, sandals, bath tools, amphorae, oil lamps, masonry, and arena equipment; non-photorealistic fresco anatomy; no invented legible inscriptions.",
+      "constraintsSuffix": "No words, letters, numerals, captions, signs, labels, logo, signature, watermark, frame mockup, modern cosmetics, modern gym gear, steel weapons, medieval armor, Renaissance costume, fantasy gladiator armor, sexualized posing, exposed genitals, explicit wounds, severed body parts, splatter, or excessive blood."
+    }
+  },
+  "episode_defaults": {
+    "accent": "#B68A3F",
+    "cover": {
+      "background": "#D8C3A3",
+      "accent": "#A84F35",
+      "dark_accent": "#211B18"
+    }
+  },
+  "editorial": {
+    "aspect_ratio": "3:4",
+    "target_duration_sec": 240,
+    "target_narration_chars": [
+      1050,
+      1450
+    ],
+    "visual_motifs": [
+      "带凹槽的青铜刮身板",
+      "从皮肤刮入小陶罐的暗金油迹",
+      "破损湿壁画与脱落石灰层",
+      "训练场沙粒和浴室蒸汽",
+      "油灯、马赛克和商品化的身体剪影"
+    ],
+    "avoid": [
+      "把角斗士画成现代健美冠军",
+      "依靠鲜血和伤口制造刺激",
+      "把贵妇或角斗士色情化",
+      "混入中世纪盔甲和现代浴室",
+      "让每个画面都变成拥挤竞技场"
+    ],
+    "motion_preferences": [
+      "沿刮身板弧线做缓慢横移",
+      "由陶罐特写拉远到完整产业链",
+      "让蒸汽、油光和沙尘做轻微层间运动",
+      "用墙皮剥落显露下一时代的场景",
+      "结尾停在空凹槽和无主身体的静止画面"
+    ],
+    "narration_tone": "冷静、近距离、带触觉的历史调查口吻；猎奇只用于开门，核心落在身体不属于本人这一事实，不煽情也不猎血。"
+  }
+}

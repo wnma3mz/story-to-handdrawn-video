@@ -1,12 +1,12 @@
-# 16:9 Monochrome Historical Motion-Comic SOP
+# 3:4 Portrait Monochrome Historical Motion-Comic SOP
 
 ## Visual contract
 
-- Fill the 16:9 frame. Do not place the story inside a white diary page or reserve a fixed top copy panel.
+- Fill a 3:4 portrait frame with a contained landscape illustration plate in the upper visual stage and a dedicated transcript panel below. Do not place the story inside a white diary page.
 - Draw expressive adult characters with bold black ink contours, grayscale wash depth, restrained paper grain, and readable period objects.
 - Keep 90–95% of each frame black, charcoal, warm gray, and paper white.
 - Assign one accent to one narrative target: vermilion for fire, seal, warning, or guilt; muted field green for land, crops, or livelihood. Do not color whole costumes or scenery.
-- Keep the bottom 18% free of essential faces and clues for code-rendered subtitles.
+- Keep essential faces, hands, and clues inside the landscape plate's central safe area. The separate lower portrait stage carries code-rendered subtitles.
 - Add exact subtitles, case labels, chapter glyphs, dates, seals, and map labels in code. Never trust generated raster text.
 
 ## Subtitle contract
@@ -47,7 +47,7 @@ Allow secondary architecture to crop at the frame edge when it improves scale. N
 
 ## Motion and editing
 
-- Use one eased path per continuous image interval. Motion must be visible at normal speed without becoming the subject: in 1920×1080 delivery, soft push/pull changes scale by at least 1.4%, active push/pull by at least 2.4%, and a pan traverses at least 24 pixels while retaining at least 3.2% safety zoom. These are endpoint floors, not targets to maximize.
+- Use one eased path per continuous image interval. Motion must be visible at normal speed without becoming the subject: in 1080×1440 delivery, soft push/pull changes scale by at least 1.4%, active push/pull by at least 2.4%, and a pan traverses at least 14 pixels while retaining at least 3.2% safety zoom. These are endpoint floors, not targets to maximize.
 - Hold the first 8–12% and last 10–16% near-still and ease the middle. A subtitle-timed machine-scene boundary never resets that interval progress, focus, transform, or plate opacity.
 - Match direction to the composition: push toward a face/action/clue, pull from a detail into a relationship, pan across geography or an actual path. Preserve screen direction; never alternate left/right for decoration.
 - Let character scenes breathe for 6–11 seconds; evidence may hold longer when it must be read.

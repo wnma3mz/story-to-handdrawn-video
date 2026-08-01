@@ -4,6 +4,7 @@ import {availableParallelism} from 'node:os';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {promisify} from 'node:util';
+import {resolveWorkspace, resolveWorkspacePath} from './lib/workspace.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const execFileAsync = promisify(execFile);
@@ -26,11 +27,16 @@ const parseArgs = (tokens) => {
 };
 
 const args = parseArgs(process.argv.slice(2));
+const workspace = resolveWorkspace(args, root);
 const jobs = Number(args.jobs || process.env.ASSET_JOBS || Math.min(4, availableParallelism()));
 if (!Number.isInteger(jobs) || jobs < 1 || jobs > 16) {
   throw new Error('--jobs must be an integer within 1..16');
 }
-const manifestPath = resolve(root, String(args.manifest || 'codex-image-jobs.json'));
+const manifestPath = resolveWorkspacePath(
+  workspace,
+  args.manifest,
+  'codex-image-jobs.json',
+);
 if (!existsSync(manifestPath)) throw new Error(`Missing Codex manifest: ${manifestPath}`);
 
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
@@ -135,7 +141,7 @@ const processJob = async (job) => {
       masterPath,
       '-vf',
       inkComic
-        ? 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,format=gray,eq=contrast=1.16:brightness=-0.02,unsharp=5:5:0.42:5:5:0'
+        ? 'format=gray,eq=contrast=1.16:brightness=-0.02,unsharp=5:5:0.42:5:5:0'
         : manifest.text_mode === 'image2'
         ? 'crop=1024:1024:0:512,format=gray,eq=contrast=1.18:brightness=0.035,unsharp=5:5:0.55:5:5:0'
         : 'format=gray,eq=contrast=1.18:brightness=0.035,unsharp=5:5:0.55:5:5:0',
@@ -153,7 +159,7 @@ const processJob = async (job) => {
       masterPath,
       '-vf',
       inkComic
-        ? 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080'
+        ? 'null'
         : manifest.text_mode === 'image2' ? 'crop=1024:1024:0:512' : 'null',
       '-frames:v',
       '1',
@@ -184,11 +190,16 @@ await mapConcurrent(sceneJobs, jobs, processJob);
 console.log(`Imported ${sceneJobs.length} scenes with ${jobs} parallel worker(s)`);
 
 if (args.apply === true) {
-  copyFileSync(resolve(manifest.storyboard), resolve(root, 'storyboard.json'));
-  console.log(`Activated storyboard → ${resolve(root, 'storyboard.json')}`);
+  const activeStoryboard = resolve(workspace, 'storyboard.json');
+  copyFileSync(resolve(manifest.storyboard), activeStoryboard);
+  console.log(`Activated storyboard → ${activeStoryboard}`);
 }
 
 if (args.render === true) {
   if (args.apply !== true) throw new Error('--render requires --apply');
-  execFileSync('npm', ['run', 'render'], {cwd: root, stdio: 'inherit'});
+  execFileSync(
+    'npm',
+    ['run', 'render', '--', '--workspace', workspace],
+    {cwd: root, stdio: 'inherit'},
+  );
 }

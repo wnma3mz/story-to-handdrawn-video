@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "id": "jiuzhou-cangfeng-epic",
+  "display_name": "九州苍风青铜史诗",
+  "description": "以北陆长风、青铜器物、石刻拓印和开阔水墨构图表现少年成长、部族政治、东陆城邦与战争地理。",
+  "base_mode": "ink-comic",
+  "recommended_for": [
+    "九州缥缈录",
+    "草原少年成长",
+    "部族政治与战争",
+    "长篇架空历史群像"
+  ],
+  "style_overrides": {
+    "exportSize": [1920, 1080],
+    "ratio": "16:9",
+    "width": 1920,
+    "height": 1080,
+    "masterSize": {
+      "default": "1536x1024"
+    },
+    "styleLock": "cinematic Jiuzhou epic rendered in dry Chinese ink, charcoal, weathered bronze rubbing and restrained pale wash on warm gray fibrous paper; believable human anatomy and expressive faces; vast northern grassland, tents, horses, wind, period-correct fictional East Asian material culture; graphic-novel clarity without anime or television-star glamour",
+    "compositionRule": "Prefer wide geography and strong foreground-middle-ground-background separation. Let a person remain small when land, weather, army scale or political isolation is the subject. Keep every recurring face, hand, weapon and active clue within the central 80% safe area so the landscape master can later be re-laid out for portrait. Alternate open horizons with intimate hands, eyes, firelight and objects; do not make every frame a heroic poster.",
+    "colorRule": "Keep most of each frame in ink black, charcoal, stone gray and warm paper. Use exactly one restrained accent per shot: pale sunset gold for remembered safety or fragile hope, oxidized bronze-green for inheritance and oath, or muted cinnabar for danger and political force. Never color whole costumes, skies or armies.",
+    "isolationRule": "Show only people and objects required by the current beat. Separate figures with tent openings, firelight pools, flag diagonals, horse lines and open sky. Preserve clan-specific clothing, braids, weapons, tack and heraldry from the continuity bible. Generate no readable glyphs, labels, maps, banners or seals; exact information is added in code.",
+    "characterRef": {
+      "useCase": "historical-scene",
+      "assetType": "cinematic Jiuzhou epic recurring-character reference",
+      "inputImagesNote": "none; establish an original, source-faithful visual identity",
+      "color": "mostly charcoal and warm gray; reserve pale gold and oxidized bronze-green for tiny identity details only",
+      "needsStyleRefs": false
+    },
+    "scenePrompt": {
+      "useCase": "historical-scene",
+      "inputImagesNote": "the supplied character reference controls recurring identity only",
+      "createLine": "Create one immediately readable cinematic tableau with real wind, weight, weather and human vulnerability; use geographic scale when the land or approaching war is the subject.",
+      "constraintsPrefix": "Source-faithful fictional Jiuzhou setting with northern nomadic material culture; practical layered wool, leather, fur, iron ring armor, low tents, horse gear and simple weapons; sober acting and believable age.",
+      "constraintsSuffix": "No words, Chinese characters, letters, numerals, captions, signs, labels, logo, signature, watermark, anime, glossy 3D, game splash art, celebrity face, ornate xianxia costume, Qing queue, Japanese samurai styling, modern object, gore or decorative magic effects."
+    }
+  },
+  "episode_defaults": {
+    "accent": "#A78A52",
+    "color_grade": "warm_bronze",
+    "cover": {
+      "series_title": "九州缥缈录 · 苍风纪",
+      "episode_label": "试播",
+      "episode_number": "01",
+      "title": "白豹尾",
+      "background": "#4B514E",
+      "accent": "#B69A61",
+      "dark_accent": "#1B201F",
+      "foreground": "#F1E9DA"
+    }
+  },
+  "editorial": {
+    "aspect_ratio": "16:9",
+    "pilot_target_sec": [45, 60],
+    "formal_episode_target_sec": [300, 480],
+    "visual_motifs": [
+      "落日云像燃烧的马群",
+      "白豹尾与红绳",
+      "风中的狮子旗",
+      "帐篷门形成的明暗边界",
+      "人物在草原和军阵前的微小比例"
+    ],
+    "avoid": [
+      "把阿苏勒画成仙侠偶像",
+      "所有镜头都做成英雄海报",
+      "用满屏红色代替战争压力",
+      "混淆北陆与东陆服饰器物",
+      "未经代码排版的伪文字旗帜"
+    ],
+    "narration_tone": "低声、清晰、有人情温度；像多年以后回看一位少年如何被时代选中，不使用预告片式吼腔。"
+  }
+}

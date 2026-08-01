@@ -1,4 +1,4 @@
-import {Img, staticFile, useCurrentFrame} from 'remotion';
+import {Img, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {revealProgress} from './easing';
 
 type LayerWipeProps = {
@@ -25,6 +25,7 @@ export const LayerWipe: React.FC<LayerWipeProps> = ({
   treatment = 'color',
 }) => {
   const frame = useCurrentFrame();
+  const {width, height} = useVideoConfig();
   const progress = revealProgress(frame, startFrame, durationFrames);
   // Product rule: every drawing plate is revealed left-to-right. Keeping one
   // mask direction across bw/detail/color prevents the composition from
@@ -46,7 +47,7 @@ export const LayerWipe: React.FC<LayerWipeProps> = ({
         style={{
           width: '100%',
           height: '100%',
-          objectFit: 'contain',
+          objectFit: height > width ? 'cover' : 'contain',
           objectPosition: 'center center',
           filter: treatmentFilter[treatment],
         }}

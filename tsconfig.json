@@ -12,7 +12,7 @@
     "baseUrl": ".",
     "paths": {
       "@storyboard-data": ["storyboard.json"],
-      "@uploaded-storyboard-data": ["storyboard.uploaded.json"]
+      "@uploaded-storyboard-data": ["storyboard.json"]
     },
     "resolveJsonModule": true,
     "isolatedModules": true,

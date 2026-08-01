@@ -19,10 +19,10 @@ const entries = [
   'examples',
   'package-lock.json',
   'package.json',
-  'public/assets/02_bw.svg',
-  'public/assets/02_color.svg',
-  'public/assets/03_bw.svg',
-  'public/assets/03_color.svg',
+  'public/assets/02_bw.png',
+  'public/assets/02_color.png',
+  'public/assets/03_bw.png',
+  'public/assets/03_color.png',
   'public/fonts',
   'references',
   'requirements.lock',
@@ -32,7 +32,6 @@ const entries = [
   'skill-package',
   'src',
   'storyboard.json',
-  'storyboard.uploaded.json',
   'tsconfig.json',
 ];
 

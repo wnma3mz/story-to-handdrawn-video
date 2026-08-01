@@ -73,7 +73,9 @@ export const MotionStage: React.FC<
   PropsWithChildren<{scene: SceneData}>
 > = ({scene, children}) => {
   const frame = useCurrentFrame();
-  const {fps} = useVideoConfig();
+  const {fps, width, height} = useVideoConfig();
+  const portraitInkComic =
+    scene.visual_mode === 'ink-comic' && height > width;
   const totalFrames = Math.max(1, Math.round(scene.duration_sec * fps));
   const localLinear = interpolate(
     frame,
@@ -90,10 +92,34 @@ export const MotionStage: React.FC<
       style={{
         position: 'absolute',
         zIndex: 10,
-        left: scene.visual_mode === 'ink-comic' ? 0 : scene.visual_mode === 'essay' ? 106 : 74,
-        right: scene.visual_mode === 'ink-comic' ? 0 : scene.visual_mode === 'essay' ? 106 : 74,
-        top: scene.visual_mode === 'ink-comic' ? 0 : scene.visual_mode === 'essay' ? 680 : 382,
-        bottom: scene.visual_mode === 'ink-comic' ? 0 : scene.visual_mode === 'essay' ? 62 : 42,
+        left: portraitInkComic
+          ? 42
+          : scene.visual_mode === 'ink-comic'
+            ? 0
+            : scene.visual_mode === 'essay'
+              ? 106
+              : 74,
+        right: portraitInkComic
+          ? 42
+          : scene.visual_mode === 'ink-comic'
+            ? 0
+            : scene.visual_mode === 'essay'
+              ? 106
+              : 74,
+        top: portraitInkComic
+          ? 154
+          : scene.visual_mode === 'ink-comic'
+            ? 0
+            : scene.visual_mode === 'essay'
+              ? 680
+              : 382,
+        bottom: portraitInkComic
+          ? 458
+          : scene.visual_mode === 'ink-comic'
+            ? 0
+            : scene.visual_mode === 'essay'
+              ? 62
+              : 42,
         overflow: 'hidden',
       }}
     >

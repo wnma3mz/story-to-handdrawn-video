@@ -56,10 +56,10 @@
 
   "ink-comic": {
     "styleLock": "full-screen monochrome motion-comic illustration, bold black ink outlines, expressive faces, grayscale ink-wash depth, restrained paper grain, dramatic but readable staging, source-accurate period and setting, selective vermilion or muted green only on the active narrative focus, no fixed white diary page, no photorealism, glossy 3D, anime styling, modern collage typography or watermark",
-    "exportSize": [1920, 1080],
-    "ratio": "16:9",
-    "width": 1920,
-    "height": 1080,
+    "exportSize": [1080, 1440],
+    "ratio": "3:4",
+    "width": 1080,
+    "height": 1440,
 
     "masterSize": {
       "default": "1536x1024"
@@ -74,14 +74,14 @@
     },
 
     "illustrationPanel": {
-      "font": "Use the entire landscape canvas for the illustration. Do not reserve a white caption panel."
+      "font": "Use the entire landscape illustration plate. The plate will be contained inside the upper visual stage of a 3:4 portrait video; do not add a caption panel or any text."
     },
 
     "assetType": {
-      "font": "one full-bleed 16:9 production panel for a monochrome motion-comic"
+      "font": "one landscape production plate for the upper visual stage of a 3:4 portrait monochrome motion-comic"
     },
 
-    "compositionRule": "Compose for a 16:9 full-screen frame. Use cinematic foreground, middle ground and background separation suitable for a restrained 2.5D push. Keep every face, hand and active narrative focus inside the central 82% safe area and the bottom 18% free of essential detail for subtitles. Cropping secondary architecture at the frame edge is allowed; never crop the active focus.",
+    "compositionRule": "Compose one self-contained landscape illustration plate for the upper visual stage of a 3:4 portrait video. Use cinematic foreground, middle ground and background separation suitable for a restrained 2.5D push. Keep every face, hand and active narrative focus inside the central 82% safe area on all sides. The separate lower portrait panel carries subtitles, so generate no text inside the art. Cropping secondary architecture at the plate edge is allowed; never crop the active focus.",
     "colorRule": "Render 90–95% of the frame in black, charcoal and warm gray. Use {accent} only on the single active narrative or emotional focal object; do not color whole costumes or backgrounds.",
     "isolationRule": "Show only characters and objects required by this beat. Large background calligraphy, subtitles, labels and exact title text will be added in code; generate none inside the illustration.",
 

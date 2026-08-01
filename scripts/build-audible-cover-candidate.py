@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
@@ -199,6 +200,93 @@ def vtt_text(path: Path) -> str:
     return "".join(rows)
 
 
+def write_single_cue_vtt(path: Path, text_value: str, duration_sec: float) -> None:
+    millis = max(1, round(duration_sec * 1000))
+    hours, millis = divmod(millis, 3_600_000)
+    minutes, millis = divmod(millis, 60_000)
+    seconds, millis = divmod(millis, 1000)
+    path.write_text(
+        "\n".join(
+            [
+                "WEBVTT",
+                "",
+                "1",
+                f"00:00:00.000 --> {hours:02d}:{minutes:02d}:{seconds:02d}.{millis:03d}",
+                text_value,
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+
+def synthesize_title(plan: Dict[str, Any], media: Path, subtitles: Path) -> str:
+    if plan["backend"] == "edge-tts":
+        command = [
+            sys.executable,
+            "-m",
+            "edge_tts",
+            "--voice",
+            plan["voice"],
+            f"--rate={plan['rate']}",
+            f"--pitch={plan['pitch']}",
+            f"--volume={plan['volume']}",
+            "--text",
+            plan["title_text"],
+            "--write-media",
+            str(media),
+            "--write-subtitles",
+            str(subtitles),
+        ]
+        for attempt in range(4):
+            try:
+                run(command)
+                break
+            except BuildError:
+                media.unlink(missing_ok=True)
+                subtitles.unlink(missing_ok=True)
+                if attempt == 3:
+                    raise
+                time.sleep(2**attempt)
+        return f"{sys.executable} -m edge_tts"
+    if plan["backend"] != "macos-say":
+        raise BuildError("profile.backend must be edge-tts or macos-say")
+    if sys.platform != "darwin" or shutil.which("say") is None:
+        raise BuildError("backend=macos-say requires the macOS say command")
+    with tempfile.TemporaryDirectory(prefix="audible-cover-title-") as temporary:
+        aiff = Path(temporary) / "title.aiff"
+        run(
+            [
+                "say",
+                "-v",
+                plan["voice"],
+                "-r",
+                str(plan["speaking_rate_wpm"]),
+                "-o",
+                str(aiff),
+                "--",
+                plan["title_text"],
+            ]
+        )
+        run(
+            [
+                "ffmpeg",
+                "-y",
+                "-v",
+                "error",
+                "-i",
+                str(aiff),
+                "-codec:a",
+                "libmp3lame",
+                "-q:a",
+                "2",
+                str(media),
+            ]
+        )
+    write_single_cue_vtt(subtitles, plan["title_text"], media_duration(media))
+    return "say"
+
+
 def choose_effective_duration(
     configured_sec: float,
     natural_title_sec: float,
@@ -329,13 +417,14 @@ def load_plan(config_path: Path, cover_path: Path) -> Dict[str, Any]:
     profile = config.get("profile") or {}
     release = config.get("release") or config.get("cover") or {}
     cover_voice = release.get("cover_voice") or {}
-    if profile.get("backend") != "edge-tts":
-        raise BuildError("minimal candidate builder currently requires profile.backend=edge-tts")
-    for key in ("voice",):
-        if not profile.get(key):
-            raise BuildError(f"profile.{key} is required")
-    if not cover_voice.get("text"):
-        raise BuildError("release.cover_voice.text is required")
+    backend = str(profile.get("backend", "edge-tts"))
+    if backend not in {"edge-tts", "macos-say"}:
+        raise BuildError("profile.backend must be edge-tts or macos-say")
+    if not profile.get("voice"):
+        raise BuildError("profile.voice is required")
+    title_text = cover_voice.get("text") or release.get("title_audio_text")
+    if not title_text:
+        raise BuildError("cover.title_audio_text or release.cover_voice.text is required")
     cover_probe = probe(cover_path)
     video = stream_for(cover_probe, "video")
     fps = int(release.get("fps", 30))
@@ -345,11 +434,18 @@ def load_plan(config_path: Path, cover_path: Path) -> Dict[str, Any]:
         "profile": profile,
         "release": release,
         "cover_voice": cover_voice,
-        "title_text": str(cover_voice["text"]),
+        "title_text": str(title_text),
+        "backend": backend,
         "voice": str(cover_voice.get("voice", profile["voice"])),
         "rate": str(cover_voice.get("rate", profile.get("rate", "+0%"))),
         "pitch": str(cover_voice.get("pitch", profile.get("pitch", "+0Hz"))),
         "volume": str(cover_voice.get("volume", profile.get("volume", "+0%"))),
+        "speaking_rate_wpm": int(
+            cover_voice.get(
+                "speaking_rate_wpm",
+                profile.get("speaking_rate_wpm", 165),
+            )
+        ),
         "configured_duration_sec": float(
             release.get("duration_sec", release.get("cover_duration_sec", 2.7))
         ),
@@ -405,24 +501,7 @@ def build(args: argparse.Namespace) -> Dict[str, Any]:
             directory.mkdir()
         raw_media = raw / "cover-title.mp3"
         raw_vtt = raw / "cover-title.vtt"
-        run(
-            [
-                sys.executable,
-                "-m",
-                "edge_tts",
-                "--voice",
-                plan["voice"],
-                f"--rate={plan['rate']}",
-                f"--pitch={plan['pitch']}",
-                f"--volume={plan['volume']}",
-                "--text",
-                plan["title_text"],
-                "--write-media",
-                str(raw_media),
-                "--write-subtitles",
-                str(raw_vtt),
-            ]
-        )
+        invocation = synthesize_title(plan, raw_media, raw_vtt)
         if normalize_text(vtt_text(raw_vtt)) != normalize_text(plan["title_text"]):
             raise BuildError("edge-tts VTT text does not exactly match cover_voice.text")
 
@@ -687,8 +766,8 @@ def build(args: argparse.Namespace) -> Dict[str, Any]:
             },
             "title": {
                 "text": plan["title_text"],
-                "backend": "edge-tts",
-                "invocation": f"{sys.executable} -m edge_tts",
+                "backend": plan["backend"],
+                "invocation": invocation,
                 "voice": plan["voice"],
                 "rate": plan["rate"],
                 "pitch": plan["pitch"],

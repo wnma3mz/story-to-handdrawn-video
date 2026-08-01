@@ -8,7 +8,7 @@ const allowMissingAssets = process.argv.includes('--allow-missing-assets');
 const files = process.argv.slice(2).filter((value) => value !== '--allow-missing-assets');
 const storyboardFiles = files.length > 0
   ? files
-  : ['storyboard.json', 'storyboard.uploaded.json'];
+  : ['storyboard.json'];
 
 const motionProfiles = JSON.parse(
   readFileSync(resolve(root, 'src/motion-profiles.json'), 'utf8'),
@@ -16,6 +16,11 @@ const motionProfiles = JSON.parse(
 const allowedMotions = new Set(Object.keys(motionProfiles));
 
 const allowedPlateModes = new Set(['raster', 'svg', 'code']);
+const allowedColorGrades = new Set([
+  'monochrome',
+  'warm_bronze',
+  'snow_cinnabar',
+]);
 const codePlateMotifs = new Set([
   'window',
   'desk_night',
@@ -92,11 +97,16 @@ const validate = (file) => {
   if (!['draft_summary', 'verbatim_tts', undefined].includes(project.subtitle_contract)) {
     errors.push('project.subtitle_contract must be draft_summary or verbatim_tts');
   }
+  if (
+    project.color_grade !== undefined &&
+    !allowedColorGrades.has(project.color_grade)
+  ) {
+    errors.push(
+      'project.color_grade must be monochrome, warm_bronze, or snow_cinnabar',
+    );
+  }
   if (project.subtitle_contract === 'verbatim_tts' && project.visual_mode !== 'ink-comic') {
     errors.push('verbatim_tts subtitle contract is reserved for ink-comic mode');
-  }
-  if (project.visual_mode === 'ink-comic' && project.ratio !== '16:9') {
-    errors.push('ink-comic mode requires 16:9');
   }
   if (!Number.isFinite(project.fps) || project.fps <= 0) {
     errors.push('project.fps must be positive');
@@ -152,6 +162,23 @@ const validate = (file) => {
       if ([...scene.text.replace(/\s/g, '')].length > textLimit) {
         errors.push(`${label}: text exceeds ${textLimit} characters`);
       }
+    }
+    if (
+      scene.color_grade !== undefined &&
+      !allowedColorGrades.has(scene.color_grade)
+    ) {
+      errors.push(
+        `${label}: color_grade must be monochrome, warm_bronze, or snow_cinnabar`,
+      );
+    }
+    if (
+      project.visual_mode === 'ink-comic' &&
+      project.color_grade &&
+      scene.color_grade !== project.color_grade
+    ) {
+      errors.push(
+        `${label}: ink-comic scene color_grade must match project.color_grade`,
+      );
     }
     if (project.subtitle_contract === 'verbatim_tts') {
       const normalizedText = String(scene.text || '').replace(/\s/g, '');
@@ -253,9 +280,19 @@ const validate = (file) => {
         if (
           project.visual_mode === 'ink-comic' &&
           key === 'color' &&
-          Math.abs(dimensions.width / dimensions.height - 16 / 9) > 0.01
+          (
+            project.ratio === '3:4'
+              ? dimensions.width / dimensions.height < 0.6 ||
+                dimensions.width / dimensions.height > 1.9
+              : dimensions.width / dimensions.height < 1.25 ||
+                dimensions.width / dimensions.height > 1.9
+          )
         ) {
-          errors.push(`${label}: ink-comic color asset must be 16:9`);
+          errors.push(
+            project.ratio === '3:4'
+              ? `${label}: portrait ink-comic color asset must be between 3:5 and 1.9:1`
+              : `${label}: ink-comic color asset must be a landscape plate between 5:4 and 1.9:1`,
+          );
         }
       }
     }

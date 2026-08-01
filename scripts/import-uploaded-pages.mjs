@@ -9,6 +9,7 @@ import {
 } from 'node:fs';
 import {dirname, extname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {resolveWorkspace, resolveWorkspacePath} from './lib/workspace.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -44,6 +45,7 @@ const parseArgs = (tokens) => {
 };
 
 const args = parseArgs(process.argv.slice(2));
+const workspace = resolveWorkspace(args, root);
 if (args.images.length === 0) {
   throw new Error(
     'Usage: npm run import:uploaded -- --image /path/01.jpg --image /path/02.jpg [--transition page-flip]',
@@ -79,7 +81,9 @@ if (!Number.isFinite(pageDuration) || pageDuration < 2 || pageDuration > 15) {
   throw new Error('--page-duration must be between 2 and 15 seconds');
 }
 
-const resolvedInputs = args.images.map((value) => resolve(root, String(value)));
+const resolvedInputs = args.images.map((value) =>
+  resolveWorkspacePath(workspace, value),
+);
 for (const input of resolvedInputs) {
   if (!existsSync(input)) throw new Error(`Uploaded image does not exist: ${input}`);
 }
@@ -119,7 +123,7 @@ const batchHash = createHash('sha256')
   .slice(0, 8);
 const assetSet = `${safeTitle}-${batchHash}`;
 const generatedRoot = `generated/uploads/${assetSet}`;
-const outputDir = resolve(root, 'public/assets', generatedRoot);
+const outputDir = resolve(workspace, 'public/assets', generatedRoot);
 mkdirSync(outputDir, {recursive: true});
 
 const dimensionsFor = (path) => {
@@ -385,8 +389,16 @@ const storyboard = {
   scenes,
 };
 
-const storyboardPath = resolve(root, String(args.output || 'storyboard.uploaded.json'));
-const manifestPath = resolve(root, String(args.manifest || 'uploaded-pages.json'));
+const storyboardPath = resolveWorkspacePath(
+  workspace,
+  args.output,
+  'storyboard.uploaded.json',
+);
+const manifestPath = resolveWorkspacePath(
+  workspace,
+  args.manifest,
+  'uploaded-pages.json',
+);
 mkdirSync(dirname(storyboardPath), {recursive: true});
 mkdirSync(dirname(manifestPath), {recursive: true});
 writeFileSync(storyboardPath, `${JSON.stringify(storyboard, null, 2)}\n`);
@@ -395,6 +407,7 @@ writeFileSync(
   `${JSON.stringify(
     {
       version: 1,
+      workspace,
       asset_set: assetSet,
       storyboard: storyboardPath,
       transition,

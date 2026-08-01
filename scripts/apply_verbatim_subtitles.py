@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Replace ink-comic summary captions with the exact final TTS sentences.
+"""Replace ink-comic summary captions with the exact final TTS scene cues.
 
-The voiceover config is the source of truth. Each narration group must contain
-exactly one terminally-punctuated sentence per scene id.
+The voiceover config is the source of truth. A group may provide ``cue_texts``
+when one scene contains more than one sentence; otherwise terminal punctuation
+is used to infer one sentence per scene id.
 """
 
 from __future__ import annotations
@@ -14,10 +15,15 @@ from pathlib import Path
 
 
 SENTENCE = re.compile(r"[^。！？!?]+(?:[。！？!?]+|$)")
+PUNCTUATION = re.compile(r"[\s，。；：！？、,.!?;:“”‘’\"'（）()《》〈〉—…·]")
 
 
 def sentences(text: str) -> list[str]:
     return [match.group(0).strip() for match in SENTENCE.finditer(text) if match.group(0).strip()]
+
+
+def lexical_text(value: str) -> str:
+    return PUNCTUATION.sub("", value)
 
 
 def main() -> int:
@@ -36,10 +42,24 @@ def main() -> int:
     spoken_by_scene: dict[str, str] = {}
     for group in groups:
         scene_ids = [str(value) for value in group.get("scene_ids", [])]
-        spoken = sentences(str(group.get("speech_text", "")))
+        speech_text = str(group.get("speech_text", ""))
+        explicit_cues = group.get("cue_texts")
+        spoken = (
+            [str(value).strip() for value in explicit_cues if str(value).strip()]
+            if isinstance(explicit_cues, list)
+            else sentences(speech_text)
+        )
+        if explicit_cues is not None:
+            joined_cues = lexical_text("".join(spoken))
+            joined_speech = lexical_text(speech_text)
+            if joined_cues != joined_speech:
+                raise SystemExit(
+                    f"{group.get('id', '(unnamed group)')}: cue_texts do not "
+                    "reconstruct speech_text"
+                )
         if len(spoken) != len(scene_ids):
             raise SystemExit(
-                f"{group.get('id', '(unnamed group)')}: {len(spoken)} spoken sentences "
+                f"{group.get('id', '(unnamed group)')}: {len(spoken)} spoken cues "
                 f"for {len(scene_ids)} scene ids"
             )
         for scene_id, sentence in zip(scene_ids, spoken):

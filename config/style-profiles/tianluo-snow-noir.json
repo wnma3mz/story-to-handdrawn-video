@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "id": "tianluo-snow-noir",
+  "display_name": "天罗雪夜朱痕黑色片",
+  "description": "以雪夜、漆黑、旧木、门窗遮挡和一处朱色线索表现天罗杀手的家规、追踪、亲密关系与心理困境。",
+  "base_mode": "ink-comic",
+  "recommended_for": [
+    "刺客王朝",
+    "组织与背叛",
+    "雪夜追踪",
+    "密室关系与心理惊悚"
+  ],
+  "style_overrides": {
+    "exportSize": [1920, 1080],
+    "ratio": "16:9",
+    "width": 1920,
+    "height": 1080,
+    "masterSize": {
+      "default": "1536x1024"
+    },
+    "styleLock": "Jiuzhou assassin noir drawn with dry black ink, soot wash, scratched charcoal, black-lacquer shadows and sparse cold paper white; realistic adult faces, controlled body language, snow-muted streets, old timber architecture and knife-edge negative space; intimate historical graphic novel, not wuxia spectacle",
+    "compositionRule": "Build pressure through obstructions and distance: door frames, roof eaves, paper windows, hanging curtains, alley walls and deep shadow. Begin wide with a lone figure under snow, then move to the damaged arm, traces of pursuit and the two red lanterns. Preserve large dark negative space, but keep the active face, hand, wound wrapping and clue legible. Keep essential content in the central 80% safe area for later portrait re-layout.",
+    "colorRule": "Use lacquer black, snow gray, cold blue-gray and old wood brown. Allow exactly one accent per shot: muted lantern red for attachment and danger, or cold steel blue for the knife and physical threat. Red must never become decorative blood wash or color an entire costume.",
+    "isolationRule": "Show only the characters and traces required by the current beat. Prefer hands, footprints, bandages, thresholds, shadows and distant windows over crowds of anonymous assassins. A pursuer may appear only as a partial silhouette or trace unless the narration identifies that person. Generate no readable signs, banners, seals or calligraphy.",
+    "characterRef": {
+      "useCase": "historical-scene",
+      "assetType": "Jiuzhou assassin-noir recurring-character reference",
+      "inputImagesNote": "none; establish an original, source-faithful visual identity",
+      "color": "almost entirely charcoal, snow gray and old cloth brown; no decorative red on the character",
+      "needsStyleRefs": false
+    },
+    "scenePrompt": {
+      "useCase": "historical-scene",
+      "inputImagesNote": "the supplied character reference controls recurring identity only",
+      "createLine": "Create one restrained assassin-noir tableau whose tension comes from distance, obstruction, damaged capability and a single visible decision rather than acrobatic spectacle.",
+      "constraintsPrefix": "Source-faithful fictional Jiuzhou historical setting; practical worn cross-collar clothing, timber streets, tile roofs, cloth bandages and believable blades; sober facial acting and winter physicality.",
+      "constraintsSuffix": "No words, Chinese characters, letters, numerals, captions, signs, labels, logo, signature, watermark, anime, glossy 3D, celebrity face, xianxia costume, flying sword, energy effects, modern object, explicit wound detail, gore, splatter or decorative blood."
+    }
+  },
+  "episode_defaults": {
+    "accent": "#9F3E35",
+    "color_grade": "snow_cinnabar",
+    "cover": {
+      "series_title": "刺客王朝 · 雪夜卷",
+      "episode_label": "试播",
+      "episode_number": "01",
+      "title": "雪巷红灯",
+      "background": "#171A1B",
+      "accent": "#9F3E35",
+      "dark_accent": "#080A0B",
+      "foreground": "#EFE8DB"
+    }
+  },
+  "editorial": {
+    "aspect_ratio": "16:9",
+    "pilot_target_sec": [45, 60],
+    "formal_episode_target_sec": [300, 480],
+    "visual_motifs": [
+      "雪巷尽头两盏红灯",
+      "失去握刀能力的缠布右臂",
+      "被雪覆盖又重新出现的脚印",
+      "门窗和帘幕形成的层层遮挡",
+      "莲与葵的抽象阴影而非花瓣特效"
+    ],
+    "avoid": [
+      "把刺客拍成炫技英雄",
+      "以血腥替代心理压力",
+      "无意义的满屏朱红",
+      "仙侠飞行与武器发光",
+      "为制造悬疑而改变人物动机"
+    ],
+    "narration_tone": "靠近、冷静、略带疲惫；像在雪夜复盘一个人为什么明知危险仍向灯火走去。"
+  }
+}
