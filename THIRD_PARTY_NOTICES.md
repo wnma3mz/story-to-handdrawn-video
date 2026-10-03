@@ -35,7 +35,15 @@
 - **来源**：https://github.com/wnma3mz/anything2explainer
 - **原作者**：Vincent Wei — https://github.com/Vincentwei1021/anything2explainer
 - **授权**：PolyForm Noncommercial 1.0.0
-- **并入本仓库的部分**：`audio/`、`qc/`、`agent-rules/`
+- **并入本仓库的部分**：
+  - `agent-rules/` — `reference/` 全部 9 个方法论文档（688 行），含原作者
+    切换到 IndexTTS-2.5 后的最新版本
+  - `audio/tts_build_frame_accurate.py` — 帧精确时间轴模式的完整实现（603 行）
+  - `audio/tts_engines.py` — 引擎实现移植，但改为适配本项目渲染器的配音契约
+  - `qc/frame_metrics.py`、`qc/motion_check.py` — 逐镜量化质检
+  - `qc/shot_ranges.py` — 新写，把 `storyboard.json` 换算成这两个脚本的帧区间接口
+  - `projects/` — 用原作者方法产出的两部成片及其过程文件（见 `projects/README.md`）
+    **不随本仓库分发**，仅作本地归档；作者本人可自由使用
 
 **这是本项目整体转为非商用授权的原因。** 上游 a2e 的非商用条款要求合并后的
 衍生作品同样只能非商用使用，因此本仓库的 `LICENSE` 采用 PolyForm

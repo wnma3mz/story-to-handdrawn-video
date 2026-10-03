@@ -113,7 +113,7 @@ def media_duration(path: Path) -> float:
 # --------------------------------------------------------------------------
 
 
-def synth_piper(text: str, out: Path) -> Path:
+def synth_piper(text: str, out: Path, lang: str = "zh") -> Path:
     """piper-tts：本地 CPU，最快，音色偏机械。"""
     model = os.environ.get("PIPER_MODEL", "en_US-ryan-medium.onnx")
     subprocess.run(
@@ -124,7 +124,7 @@ def synth_piper(text: str, out: Path) -> Path:
     return out
 
 
-def synth_kokoro(text: str, out: Path) -> Path:
+def synth_kokoro(text: str, out: Path, lang: str = "zh") -> Path:
     """kokoro：本地 CPU，需 espeak-ng。实测散文约 2.3 词/秒。"""
     from kokoro import KPipeline  # type: ignore
 
@@ -138,7 +138,7 @@ def synth_kokoro(text: str, out: Path) -> Path:
     return _concat_to_wav(chunks, out, 24000)
 
 
-def synth_kokoro_onnx(text: str, out: Path) -> Path:
+def synth_kokoro_onnx(text: str, out: Path, lang: str = "zh") -> Path:
     """kokoro-onnx：ARM 友好，只要 onnxruntime，不要 torch/spaCy。"""
     from kokoro_onnx import Kokoro  # type: ignore
 
@@ -150,7 +150,15 @@ def synth_kokoro_onnx(text: str, out: Path) -> Path:
     return _pcm_to_wav(samples, out, 24000)
 
 
-def synth_indextts2_5(text: str, out: Path) -> Path:
+# 参考音频按语言自动选择，沿用 anything2explainer 的约定；路径是远端主机上的
+# 绝对路径，用 INDEXTTS_REF_AUDIO 覆盖。
+INDEXTTS_DEFAULT_REFS = {
+    "zh": "/home/lu/projects/video-cn-dubber/f5-tts/zh_male_bj.wav",
+    "en": "/home/lu/projects/video-cn-dubber/f5-tts/en_female_1.wav",
+}
+
+
+def synth_indextts2_5(text: str, out: Path, lang: str = "zh") -> Path:
     """IndexTTS-2.5：经 SSH 调远端 vLLM-Omni 的 OpenAI 兼容接口。
 
     参考音频与接口都只需远端可达，音频响应直接写回本地。
@@ -158,12 +166,20 @@ def synth_indextts2_5(text: str, out: Path) -> Path:
     """
     host = os.environ.get("INDEXTTS_SSH_HOST", "xpark")
     url = os.environ.get("INDEXTTS_URL", "http://127.0.0.1:8000/v1/audio/speech")
-    ref = os.environ.get("INDEXTTS_REF_AUDIO", "f5-tts/zh_male_bj.wav")
+    ref = os.environ.get("INDEXTTS_REF_AUDIO", INDEXTTS_DEFAULT_REFS.get(lang, INDEXTTS_DEFAULT_REFS["zh"]))
     speed = os.environ.get("INDEXTTS_SPEED", "1.0")
     seed = os.environ.get("INDEXTTS_SEED", "42")
+    remote_lang = lang
 
     params = json.dumps(
-        {"url": url, "ref_audio": ref, "text": text, "speed": speed, "seed": seed},
+        {
+            "url": url,
+            "ref_audio": ref,
+            "text": text,
+            "speed": speed,
+            "seed": seed,
+            "lang": remote_lang,
+        },
         ensure_ascii=False,
     )
     remote_script = f"""\
@@ -181,7 +197,7 @@ payload = {{
     'speed': params['speed'],
     'seed': params['seed'],
     'ref_audio': reference,
-    'extra_params': {{'lang': 'zh', 'emo_audio': reference}},
+    'extra_params': {{'lang': params['lang'], 'emo_audio': reference}},
 }}
 request = urllib.request.Request(
     params['url'],
@@ -266,6 +282,12 @@ def main() -> int:
     parser.add_argument("--workspace", type=Path, default=Path(os.environ.get("STORY_VIDEO_WORKSPACE", ".")))
     parser.add_argument("--episode", default=os.environ.get("EPISODE", "default"))
     parser.add_argument("--engine", required=True, choices=sorted(ENGINES))
+    parser.add_argument(
+        "--lang",
+        default="zh",
+        choices=("zh", "en"),
+        help="IndexTTS-2.5 按语言选参考音频；其余引擎忽略",
+    )
     parser.add_argument("--voice", default="", help="覆盖 voiceover.json 里的 voice（仅 piper/kokoro 有意义）")
     parser.add_argument("--jobs", type=int, default=1, help="并发组数；远端引擎建议保持 1")
     parser.add_argument("--force", action="store_true", help="忽略已有缓存重新合成")
@@ -315,7 +337,9 @@ def main() -> int:
 
         print(f"  {group_id} 合成中（{len(speech_text)} 字）…")
         with tempfile.TemporaryDirectory() as temp_dir:
-            produced = synthesize(speech_text, Path(temp_dir) / f"{group_id}.audio")
+            produced = synthesize(
+                speech_text, Path(temp_dir) / f"{group_id}.audio", args.lang
+            )
             subprocess.run(
                 ["ffmpeg", "-v", "error", "-y", "-i", str(produced),
                  "-c:a", "libmp3lame", "-q:a", "2", str(raw)],

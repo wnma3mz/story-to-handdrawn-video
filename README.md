@@ -136,8 +136,10 @@ npm run audit:delivery -- out/ep01/voiced/release.mp4
 │   ├── compositions/motiongraphics/  纯代码绘制路径
 │   └── *.tsx            handdrawn 路径（Scene / MotionStage / InkComicScene…）
 ├── scripts/            46 个 CLI：渲染、导入、审计、打包、异步作业
-├── audio/              多引擎旁白预合成（tts_engines.py）
+├── agent-rules/        多 Agent 作业规范（9 份，来自 anything2explainer）
+├── audio/              旁白：整组预合成 + 帧精确时间轴两条路径（见 audio/README.md）
 ├── qc/                 逐镜量化质检（frame_metrics / motion_check / shot_ranges）
+├── projects/           历史成片归档，本地保留，不入库（见 projects/README.md）
 ├── config/             视觉模式与 style profile
 └── skill-package/      可分发的 Agent Skill
 ```

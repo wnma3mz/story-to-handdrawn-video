@@ -107,3 +107,19 @@
 - 不要在 motiongraphics 路径上用 `plate_mode=code`（12 图元白名单与
   `mg_plate` 词汇表互不重叠），`Scene.tsx` 会直接报错。
 - 不要跨过 `verify_lock` 直接渲染。台词对不上是最贵的一类返工。
+- 不要用画面描述填 `narration`，不要给场景母图挂角色参考图（详见 README 与本文件上文）。
+
+## 参考资料
+
+`agent-rules/` 是多 Agent 作业的规范集，做 motiongraphics 或解说片时必读：
+
+| 文件 | 作用 |
+|---|---|
+| `motion-vocabulary.md` | 入场/强调/光效/离场/运镜的公式与帧数 |
+| `composition-and-light.md` | 三级字号、光随主体走、set-piece 编排、量化阈值 |
+| `narration-storyboard.md` | 解说词格式、TTS 参数、22 类镜头设计模式表 |
+| `agent-build-rules.md` / `agent-qc-rules.md` | 构建与质检 Agent 的协议 |
+| `prompts.md` | 6 段可直接贴的 Agent 提示词 |
+| `lessons.md` | 原作者 5 部片子踩过的坑，199 行——**动 renderer 前先读** |
+| `research-brief.md` | 调研 Agent 规范，含提示词注入防护 |
+| `style-guide.md` | 画布安全区、调色板、字体、图元目录 |
