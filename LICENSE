@@ -1,21 +1,104 @@
-MIT License
+text-to-video
 
-Copyright (c) 2026 gnipbao
+Required Notice: Copyright (c) 2026 Vincent Wei
+(https://github.com/Vincentwei1021/anything2explainer)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Upstream components merged into this project were originally authored and
+licensed by others. Their copyright notices and license terms survive the
+merge and are reproduced verbatim in THIRD_PARTY_NOTICES.md:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+  - story-to-handdrawn-video  Copyright (c) 2026 gnipbao   MIT
+  - Toonflow Adapter Kit content, from Toonflow-app
+                             Copyright (c) HBAI-Ltd       MIT
+  - Bundled fonts under public/fonts/                       SIL OFL 1.1
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+This license governs the merged work as a whole. Videos produced with this
+toolkit belong to their creators. Noncommercial use of the toolkit is free;
+any commercial use of the toolkit requires prior authorization from the
+authors of every upstream component listed above.
+
+---
+
+# PolyForm Noncommercial License 1.0.0
+
+<https://polyformproject.org/licenses/noncommercial/1.0.0>
+
+## Acceptance
+
+In order to get any license under these terms, you must agree to them as
+both strict obligations and conditions to all your licenses.
+
+## Copyright License
+
+The licensor grants you a copyright license to do everything you might do
+with the software that would otherwise infringe the licensor's copyright
+in it for any permitted purpose. However, you may only distribute the
+software according to the Distribution License.
+
+## Patent License
+
+The licensor grants you a patent license covering all patent claims
+licensable by the licensor that are embodied in the software. However, you
+may only distribute the software according to the Distribution License.
+
+## Redistribution
+
+You may reproduce and distribute copies of the software or derivative works
+thereof in any medium, with or without modifications, and in any form
+provided that you meet the following conditions:
+
+1.  All copyright notices, attribution notices, disclaimers of warranty, and
+    limitations of liability appearing in the software must be reproduced in
+    all distributions.
+2.  You must cause any modified files to carry prominent notices stating that
+    you changed the files.
+3.  You must retain, in the source form of any derivative works that you
+    distribute, all copyright, attribution, author, and provenance notices
+    from the source form of the work.
+4.  If the software includes a "NOTICE" text file as part of its distribution,
+    then any derivative works that you distribute must include a readable copy
+    of the attribution notices contained within such NOTICE file.
+
+## Notices
+
+You must ensure that anyone who gets a copy of any part of the software from
+you also gets a copy of these terms.
+
+## No Other Rights
+
+These terms do not imply any licenses other than those expressly granted in
+these terms.
+
+## Termination
+
+If you use the software in violation of these terms, such use is not licensed,
+and your licenses will automatically terminate. If the licensor provides you
+with a notice of your violation, and you cease all violation of this license
+no later than 30 days after you receive that notice, your licenses will be
+reinstated retroactively. However, if you violate these terms after such
+reinstatement, any additional violation of these terms will cause your
+licenses to terminate automatically and permanently.
+
+## No Liability
+
+***As far as the law allows, the software comes as is, without any warranty or
+condition, and the licensor will not be liable to you for any damages arising
+out of these terms or the use or nature of the software, under any kind of
+legal claim.***
+
+## Definitions
+
+The **licensor** is the entity offering these terms, and the **software** is
+the software the licensor makes available under these terms, including any
+portion of it.
+
+**you** refers to the individual or entity agreeing to these terms.
+
+**your licenses** are all the licenses granted to you for the software under
+these terms, including the copyright license, the patent license, and the
+distribution license.
+
+**use** means anything you do with the software requiring one of your
+licenses.
+
+**trademark** means trademarks, service marks, and similar rights.

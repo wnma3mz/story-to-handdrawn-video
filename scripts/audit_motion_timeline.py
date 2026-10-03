@@ -7,7 +7,7 @@ import sys
 from collections import Counter
 
 
-MOTION_PROFILES = pathlib.Path(__file__).resolve().parents[1] / "src/motion-profiles.json"
+MOTION_PROFILES = pathlib.Path(__file__).resolve().parents[1] / "src/common/motion-profiles.json"
 ALLOWED = set(json.loads(MOTION_PROFILES.read_text(encoding="utf-8")))
 SETTLED = {"hold", "push_soft", "pull_soft"}
 

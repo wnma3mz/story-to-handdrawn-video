@@ -1,0 +1,87 @@
+{
+  "project": {
+    "title": "纸上的夏天",
+    "mode": "speed",
+    "images_per_scene": 1,
+    "derive_bw": "local",
+    "enable_detail": false,
+    "gen_size": 1024,
+    "export_size": [
+      1080,
+      1440
+    ],
+    "visual_mode": "diary",
+    "ratio": "3:4",
+    "width": 1080,
+    "height": 1440,
+    "fps": 30,
+    "transition": "cut",
+    "transition_sec": 0.7,
+    "style_lock": "minimal hand-drawn diary comic with restrained color and generous negative space",
+    "character_lock": "keep recurring characters, clothing, props, and locations visually consistent",
+    "cover": {
+      "series_title": "手绘故事",
+      "episode_label": "演示",
+      "episode_number": "01",
+      "title": "纸上的夏天",
+      "background": "#5E7468"
+    },
+    "audio": {
+      "voiceover": "post",
+      "bgm": "optional_bed_only",
+      "bgm_follows_text": false
+    }
+  },
+  "scenes": [
+    {
+      "id": "01",
+      "duration_sec": 6,
+      "text": "她推开窗，\n风把旧日记翻到新的一页。",
+      "narration": "她推开窗，风把旧日记翻到新的一页。",
+      "visual": "安静房间里的窗边与摊开的日记",
+      "shot": "establishing",
+      "focus": "center",
+      "motion": "push_soft",
+      "transition_to_next": "fade",
+      "plate_mode": "raster",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": "低饱和暖色与安静的留白",
+      "detail_hint": null,
+      "assets": {
+        "text_image": null,
+        "bw": "assets/02_bw.png",
+        "detail": null,
+        "color": "assets/02_color.png"
+      }
+    },
+    {
+      "id": "02",
+      "duration_sec": 6,
+      "text": "故事从一束光开始，\n慢慢走向远方。",
+      "narration": "故事从一束光开始，慢慢走向远方。",
+      "visual": "带着手绘痕迹的远景与温柔光线",
+      "shot": "aftermath",
+      "focus": "center",
+      "motion": "hold",
+      "transition_to_next": "cut",
+      "plate_mode": "raster",
+      "layers": [
+        "text",
+        "bw_full",
+        "color"
+      ],
+      "color_hint": "低饱和蓝灰与一处暖黄色",
+      "detail_hint": null,
+      "assets": {
+        "text_image": null,
+        "bw": "assets/03_bw.png",
+        "detail": null,
+        "color": "assets/03_color.png"
+      }
+    }
+  ]
+}

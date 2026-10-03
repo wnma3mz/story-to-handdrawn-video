@@ -1,4 +1,4 @@
-import motionProfiles from './motion-profiles.json';
+import motionProfiles from './common/motion-profiles.json';
 
 export type LayerId = 'text' | 'bw_full' | 'detail' | 'color';
 
@@ -10,9 +10,11 @@ export type ColorGrade = 'monochrome' | 'warm_bronze' | 'snow_cinnabar';
  * How the illustration plate is produced for a scene.
  * - raster: PNG masters from Image2 / upload (default, existing pipeline)
  * - svg: static SVG under public/, no image generation
- * - code: Remotion-drawn motif plate, no image generation
+ * - code: Remotion-drawn motif plate (CodePlate's 12 motifs), no image generation
+ * - mg:   MotionGraphicsVideo's procedural motif, drawn by the motiongraphics
+ *         composition only; the handdrawn composition rejects it
  */
-export type PlateMode = 'raster' | 'svg' | 'code';
+export type PlateMode = 'raster' | 'svg' | 'code' | 'mg';
 
 export type CodePlateSpec = {
   /** Registered motif key rendered by CodePlate. */
@@ -21,6 +23,23 @@ export type CodePlateSpec = {
   ink?: string;
   accents?: string[];
   /** Deterministic variation seed for wash placement. */
+  seed?: number;
+};
+
+/** 程序化图元词汇表，见 compositions/motiongraphics/Motif.tsx 的 MOTIFS。 */
+export type MotionGraphicsMotif =
+  | 'flow'
+  | 'compare'
+  | 'stack'
+  | 'quote'
+  | 'number'
+  | 'title'
+  | 'empty';
+
+export type MotionGraphicsPlateSpec = {
+  motif: MotionGraphicsMotif;
+  headline?: string;
+  detail?: string;
   seed?: number;
 };
 
@@ -52,6 +71,13 @@ export type SceneData = {
   plate_mode?: PlateMode;
   /** Procedural SVG motif plate when plate_mode is code. */
   code_plate?: CodePlateSpec | null;
+  /**
+   * 程序化图元，仅供 motiongraphics composition 使用。
+   * 与 code_plate 分开是因为两者共享同一批字段名却属于不同的封闭词汇表：
+   * code_plate.motif 受 validate-storyboard.mjs 的 12 图元白名单约束，
+   * 混入别的名字会让 handdrawn 路径崩溃。
+   */
+  mg_plate?: MotionGraphicsPlateSpec | null;
   scene_kind?: 'host' | 'narrative' | 'evidence' | 'map' | 'title';
   glyph?: string | null;
   case_label?: string | null;
@@ -91,7 +117,7 @@ export type Storyboard = {
     };
     accent?: string;
     subtitle_contract?: 'draft_summary' | 'verbatim_tts';
-    ratio: '3:4' | '16:9';
+    ratio: '3:4' | '9:16' | '16:9';
     width: number;
     height: number;
     fps: number;

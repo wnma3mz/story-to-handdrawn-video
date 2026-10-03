@@ -96,15 +96,26 @@ def format_vtt_timestamp(seconds: float) -> str:
 
 
 def write_proportional_vtt(path: Path, cue_texts: list[str], duration: float) -> None:
-    texts = [str(text).strip() for text in cue_texts if str(text).strip()]
-    if not texts:
-        raise ValueError("macos-say requires at least one non-empty cue_text")
-    weights = [max(1, len(re.sub(r"\s+", "", text))) for text in texts]
+    """按字数权重把整段音频等分给各 cue，写成 VTT。
+
+    cue 数必须与 scene_ids 数相等——下游 build 阶段用
+    `len(cues) != len(scene_ids)` 做硬校验，把 cue 与镜次一一绑定。
+    因此空白台词的镜次也必须占一个 cue，用零时长占位，而不是被过滤掉。
+    短剧里无台词镜次很常见（纯反应镜、空镜），过滤会让两者数量对不上。
+    """
+    texts = [str(text).strip() for text in cue_texts]
+    if not any(texts):
+        raise ValueError("requires at least one non-empty cue_text")
+    weights = [max(1, len(re.sub(r"\s+", "", text))) if text else 0 for text in texts]
     total_weight = sum(weights)
     cursor = 0.0
     rows = ["WEBVTT", ""]
-    for index, (text, weight) in enumerate(zip(texts, weights), start=1):
-        end = duration if index == len(texts) else cursor + duration * weight / total_weight
+    index = 0
+    for text, weight in zip(texts, weights):
+        index += 1
+        end = cursor if weight == 0 else (
+            duration if index == len(texts) else cursor + duration * weight / total_weight
+        )
         rows.extend([
             str(index),
             f"{format_vtt_timestamp(cursor)} --> {format_vtt_timestamp(end)}",

@@ -30,6 +30,8 @@ if (!/^[\p{Letter}\p{Number}._-]+$/u.test(episode) || episode === '.' || episode
 const isPreview = args.includes('--preview');
 const isCover = args.includes('--cover');
 const isUploaded = args.includes('--uploaded');
+// 纯代码绘制的 motiongraphics 路径：不经过出图环节，读同一份 storyboard.json
+const isMotionGraphics = args.includes('--motion-graphics');
 const storyboardPath = resolve(
   workspace,
   valueFor('--storyboard') ||
@@ -86,6 +88,20 @@ if (isCover) {
     'npx',
     [
       'remotion', 'render', 'src/index.ts', 'UploadedPictureSilent',
+      resolve(outDir, `${name}.mp4`),
+      '--codec=h264', `--crf=${crf}`, '--pixel-format=yuv420p', '--muted',
+      '--concurrency=1', ...scaleArg,
+    ],
+    {cwd: root, env: renderEnvironment, stdio: 'inherit'},
+  );
+} else if (isMotionGraphics) {
+  const name = isPreview ? 'mg-silent-preview' : 'mg-silent';
+  const scaleArg = isPreview ? ['--scale=0.6666666666666666'] : [];
+  const crf = isPreview ? '23' : '18';
+  execFileSync(
+    'npx',
+    [
+      'remotion', 'render', 'src/index.ts', 'MotionGraphicsSilent',
       resolve(outDir, `${name}.mp4`),
       '--codec=h264', `--crf=${crf}`, '--pixel-format=yuv420p', '--muted',
       '--concurrency=1', ...scaleArg,

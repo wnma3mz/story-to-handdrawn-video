@@ -54,5 +54,21 @@
     "endXPercent": 1.35,
     "startYPercent": 0,
     "endYPercent": 0
+  },
+  "push_down": {
+    "startScale": 1.004,
+    "endScale": 1.036,
+    "startXPercent": 0,
+    "endXPercent": 0,
+    "startYPercent": -1.35,
+    "endYPercent": 0
+  },
+  "push_up": {
+    "startScale": 1.004,
+    "endScale": 1.036,
+    "startXPercent": 0,
+    "endXPercent": 0,
+    "startYPercent": 1.35,
+    "endYPercent": 0
   }
 }

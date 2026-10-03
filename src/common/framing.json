@@ -1,0 +1,28 @@
+{
+  "_comment": [
+    "每个视觉模式在每种画幅下的插图取景框，单位为画布像素。",
+    "来源：原 story-to-handdrawn-video 把这些值硬编码在 src/MotionStage.tsx 的三元表达式里，",
+    "本文件只是把它们显式化，3:4 与 16:9 的取值与原实现逐像素等价，没有改变任何现有行为。",
+    "9:16 是本项目新增的短剧原生画幅，取景框由 3:4 基准按 1920/1440 = 1.3333 等比纵向外扩得到。",
+    "外扩而非按比例压缩，是为了让画面区与底部字幕带都变高，而不是把画面压扁。"
+  ],
+  "portrait": {
+    "9:16": {
+      "diary": {"left": 74, "right": 74, "top": 509, "bottom": 56},
+      "essay": {"left": 106, "right": 106, "top": 907, "bottom": 83},
+      "ink-comic": {"left": 42, "right": 42, "top": 205, "bottom": 611}
+    },
+    "3:4": {
+      "diary": {"left": 74, "right": 74, "top": 382, "bottom": 42},
+      "essay": {"left": 106, "right": 106, "top": 680, "bottom": 62},
+      "ink-comic": {"left": 42, "right": 42, "top": 154, "bottom": 458}
+    }
+  },
+  "landscape": {
+    "16:9": {
+      "diary": {"left": 74, "right": 74, "top": 382, "bottom": 42},
+      "essay": {"left": 106, "right": 106, "top": 680, "bottom": 62},
+      "ink-comic": {"left": 0, "right": 0, "top": 0, "bottom": 0}
+    }
+  }
+}

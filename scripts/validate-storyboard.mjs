@@ -11,11 +11,11 @@ const storyboardFiles = files.length > 0
   : ['storyboard.json'];
 
 const motionProfiles = JSON.parse(
-  readFileSync(resolve(root, 'src/motion-profiles.json'), 'utf8'),
+  readFileSync(resolve(root, 'src/common/motion-profiles.json'), 'utf8'),
 );
 const allowedMotions = new Set(Object.keys(motionProfiles));
 
-const allowedPlateModes = new Set(['raster', 'svg', 'code']);
+const allowedPlateModes = new Set(['raster', 'svg', 'code', 'mg']);
 const allowedColorGrades = new Set([
   'monochrome',
   'warm_bronze',
@@ -36,8 +36,14 @@ const codePlateMotifs = new Set([
   'book_lamp',
 ]);
 
+// motiongraphics composition 的程序化图元词汇表，与 CodePlate 的 12 图元互不重叠
+const motionGraphicsMotifs = new Set([
+  'flow', 'compare', 'stack', 'quote', 'number', 'title', 'empty',
+]);
+
 const resolvePlateMode = (scene) => {
   if (allowedPlateModes.has(scene?.plate_mode)) return scene.plate_mode;
+  if (scene?.mg_plate && typeof scene.mg_plate === 'object') return 'mg';
   if (scene?.code_plate && typeof scene.code_plate === 'object') return 'code';
   if (scene?.assets?.svg) return 'svg';
   return 'raster';
@@ -52,6 +58,15 @@ const plateIdentityKey = (scene) => {
       background: plate.background || null,
       ink: plate.ink || null,
       accents: plate.accents || null,
+      seed: plate.seed ?? null,
+    })}`;
+  }
+  if (mode === 'mg') {
+    const plate = scene.mg_plate || {};
+    return `mg:${JSON.stringify({
+      motif: plate.motif || null,
+      headline: plate.headline || null,
+      detail: plate.detail || null,
       seed: plate.seed ?? null,
     })}`;
   }
@@ -84,10 +99,13 @@ const validate = (file) => {
     return ['storyboard must contain project and at least one scene'];
   }
 
-  if (!['3:4', '16:9'].includes(project.ratio)) {
-    errors.push('project.ratio must be 3:4 or 16:9');
+  if (!['3:4', '9:16', '16:9'].includes(project.ratio)) {
+    errors.push('project.ratio must be 3:4, 9:16, or 16:9');
   }
-  const expectedRatio = project.ratio === '16:9' ? 16 / 9 : 3 / 4;
+  const RATIO_WIDTH = {'3:4': 3, '9:16': 9, '16:9': 16};
+  const RATIO_HEIGHT = {'3:4': 4, '9:16': 16, '16:9': 9};
+  const expectedRatio =
+    RATIO_WIDTH[project.ratio] / RATIO_HEIGHT[project.ratio];
   if (Math.abs(project.width / project.height - expectedRatio) > 0.001) {
     errors.push(`project width/height must be ${project.ratio}`);
   }
@@ -193,7 +211,7 @@ const validate = (file) => {
     const colorIndex = scene.layers.indexOf('color');
     const plateMode = resolvePlateMode(scene);
     if (scene.plate_mode && !allowedPlateModes.has(scene.plate_mode)) {
-      errors.push(`${label}: plate_mode must be raster, svg, or code`);
+      errors.push(`${label}: plate_mode must be raster, svg, code, or mg`);
     }
     if ((scene.text || scene.assets.text_image) && !hasText) {
       errors.push(`${label}: text content requires a text layer`);
@@ -237,6 +255,25 @@ const validate = (file) => {
       if (scene.assets.color || scene.assets.bw || scene.assets.svg) {
         errors.push(`${label}: code plates must leave raster/svg asset paths null`);
       }
+    } else if (plateMode === 'mg') {
+      const motif = scene.mg_plate?.motif;
+      if (!motif || typeof motif !== 'string') {
+        errors.push(`${label}: mg plates require mg_plate.motif`);
+      } else if (!motionGraphicsMotifs.has(motif)) {
+        errors.push(
+          `${label}: unknown mg_plate.motif ${JSON.stringify(motif)}; ` +
+            `expected one of ${[...motionGraphicsMotifs].join(', ')}`,
+        );
+      }
+      if (illustrated) {
+        errors.push(`${label}: mg plates cannot use bw_full reveal layers`);
+      }
+      if (scene.assets.color || scene.assets.bw || scene.assets.svg) {
+        errors.push(`${label}: mg plates must leave raster/svg asset paths null`);
+      }
+      if (scene.code_plate) {
+        errors.push(`${label}: mg plates must not also declare code_plate`);
+      }
     }
     if (project.visual_mode === 'ink-comic') {
       if (scene.visual_mode !== 'ink-comic') {
@@ -277,11 +314,13 @@ const validate = (file) => {
       }
       if (dimensions && ['bw', 'detail', 'color'].includes(key)) {
         plateSizes.push(`${dimensions.width}x${dimensions.height}`);
+        const portraitCanvas =
+          project.ratio === '3:4' || project.ratio === '9:16';
         if (
           project.visual_mode === 'ink-comic' &&
           key === 'color' &&
           (
-            project.ratio === '3:4'
+            portraitCanvas
               ? dimensions.width / dimensions.height < 0.6 ||
                 dimensions.width / dimensions.height > 1.9
               : dimensions.width / dimensions.height < 1.25 ||
@@ -289,7 +328,7 @@ const validate = (file) => {
           )
         ) {
           errors.push(
-            project.ratio === '3:4'
+            portraitCanvas
               ? `${label}: portrait ink-comic color asset must be between 3:5 and 1.9:1`
               : `${label}: ink-comic color asset must be a landscape plate between 5:4 and 1.9:1`,
           );

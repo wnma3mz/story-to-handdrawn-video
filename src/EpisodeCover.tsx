@@ -262,16 +262,20 @@ const chineseChapterNumber = (chapter: string): number | null => {
 
 const EssayCover: React.FC = () => {
   const cover = storyboard.project.cover || {};
+  const firstScene = storyboard.scenes[0];
   const title = cover.title || storyboard.project.title;
   const seriesTitle = cover.series_title || '随笔 · 手绘动画';
   const background = cover.background || '#F4EDE0';
   const accent = cover.accent || '#8B6E4E';
-  const titleLines = title
+  const darkAccent = cover.dark_accent || '#3E3230';
+  const explicitTitleLines = title
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
   const effectiveLines =
-    titleLines.length > 0 ? titleLines : balancedTitleLines(title);
+    explicitTitleLines.length > 1
+      ? explicitTitleLines
+      : balancedTitleLines(title);
   const longestLine = Math.max(
     ...effectiveLines.map((line) => Array.from(line).length),
     1,
@@ -287,7 +291,7 @@ const EssayCover: React.FC = () => {
     <AbsoluteFill
       style={{
         backgroundColor: background,
-        color: '#3E3230',
+        color: darkAccent,
         fontFamily: 'OriginalDiaryHand, Songti SC, STSong, serif',
         overflow: 'hidden',
       }}
@@ -300,7 +304,8 @@ const EssayCover: React.FC = () => {
           right: 0,
           bottom: 0,
           background:
-            'radial-gradient(ellipse 68% 58% at 50% 44%, rgba(255,250,240,0.9) 0%, rgba(232,218,195,0.4) 100%)',
+            `linear-gradient(180deg, ${background} 0%, ${background} 43%, ${darkAccent} 100%)`,
+          opacity: 0.98,
         }}
       />
       <div
@@ -342,6 +347,7 @@ const EssayCover: React.FC = () => {
           top: 190,
           left: 120,
           right: 120,
+          height: 390,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -354,7 +360,7 @@ const EssayCover: React.FC = () => {
             lineHeight: 1.22,
             letterSpacing: '0.04em',
             textAlign: 'center',
-            color: '#2C2822',
+            color: darkAccent,
           }}
         >
           {effectiveLines.map((line, index) => (
@@ -367,7 +373,40 @@ const EssayCover: React.FC = () => {
       <div
         style={{
           position: 'absolute',
-          bottom: 82,
+          top: 640,
+          left: 62,
+          right: 62,
+          bottom: 92,
+          overflow: 'hidden',
+          border: `4px solid ${accent}`,
+          backgroundColor: darkAccent,
+          boxShadow: '0 22px 60px rgba(34,28,24,0.28)',
+        }}
+      >
+        {firstScene.assets.color ? (
+          <Img
+            src={staticFile(firstScene.assets.color)}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              filter: 'saturate(0.82) contrast(1.04) brightness(0.9)',
+            }}
+          />
+        ) : null}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background:
+              'linear-gradient(180deg, rgba(20,18,16,0.02), rgba(20,18,16,0.22))',
+          }}
+        />
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 36,
           left: 0,
           right: 0,
           textAlign: 'center',

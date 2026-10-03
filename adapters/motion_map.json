@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "_comment": [
+    "上游内容层（content/skills/production_skills/storyboard_table_techniques.md）的",
+    "景别与运镜词表 → 渲染器 src/common/motion-profiles.json 的运动词汇映射。",
+    "camera_move.rules 按数组顺序匹配，第一条命中即胜出；因此方向修饰规则必须排在基础动词规则之前。"
+  ],
+  "source": "content/skills/production_skills/storyboard_table_techniques.md §shotSize / §cameraMove",
+
+  "shot_scale": {
+    "_comment": "景别 → shot_scale 枚举。该字段不改变渲染时的取景框，而是作为构图指令传给生图提示词编译器。",
+    "大远景": "extreme_wide",
+    "远景": "wide",
+    "全景": "full",
+    "中景": "medium",
+    "近景": "close",
+    "特写": "close_up",
+    "大特写": "extreme_close_up"
+  },
+
+  "shot_scale_composition": {
+    "_comment": "shot_scale → 生图提示词中的构图描述（中文，直接拼进 scene prompt）。",
+    "extreme_wide": "大远景构图，环境全貌入画，人物占画面高度不超过三分之一",
+    "wide": "远景构图，场景与人物关系清晰，人物占画面高度约三分之一",
+    "full": "全景构图，人物全身入画，头顶与脚底完整不裁切",
+    "medium": "中景构图，取膝盖以上，人物居画面中",
+    "close": "近景构图，取胸部以上，人物占画面主体",
+    "close_up": "特写构图，面部或关键物件充满画面",
+    "extreme_close_up": "大特写构图，极致局部，仅保留决定性细节"
+  },
+
+  "camera_move": {
+    "fallback": "hold",
+    "rules": [
+      {"motion": "hold", "keywords": ["静止", "固定", "无运镜", "锁定", "机位不动"]},
+
+      {"motion": "push_down", "keywords": ["俯拍", "俯视", "顶拍", "下摇", "摇下", "下降", "俯冲"]},
+      {"motion": "push_up", "keywords": ["仰拍", "仰视", "底拍", "上摇", "摇上", "上升", "仰冲"]},
+
+      {"motion": "push_left", "keywords": ["左推", "推向左", "推左", "左移推", "朝左推"]},
+      {"motion": "push_right", "keywords": ["右推", "推向右", "推右", "右移推", "朝右推"]},
+
+      {"motion": "pan_left", "keywords": ["左摇", "摇左", "向左", "朝左", "左移", "移左", "左跟", "跟左", "左平移", "左横移"]},
+      {"motion": "pan_right", "keywords": ["右摇", "摇右", "向右", "朝右", "右移", "移右", "右跟", "跟右", "右平移", "右横移"]},
+
+      {"motion": "push_soft", "keywords": ["缓推", "微推", "轻推", "推近", "推进", "缓推近", "缓升", "推"]},
+      {"motion": "pull_soft", "keywords": ["缓拉", "微拉", "轻拉", "拉远", "拉出", "缓拉远", "缓降", "拉"]},
+
+      {"motion": "pan_left", "keywords": ["摇", "移", "跟", "平移", "横移", "跟随"]}
+    ],
+    "one_take_prefixes": ["一镜到底", "一镜到底：", "一镜:"],
+    "_one_take_comment": "一镜到底的运镜串（如「缓推远景→跟移至院内→落幅全景」）只取第一段作为本镜运动，其余段落视为同镜内的连续变化。编译器会就此发出 warning。"
+  },
+
+  "transition": {
+    "_comment": "toonflow 分镜表用方括号标注场间转场，映射到渲染器的逐镜 transition_to_next。",
+    "default": "cut",
+    "map": {
+      "硬切": "cut",
+      "切": "cut",
+      "淡入": "fade",
+      "淡出": "fade",
+      "叠化": "fade",
+      "闪白": "cut",
+      "闪黑": "cut",
+      "翻书": "page-flip"
+    }
+  }
+}

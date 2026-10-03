@@ -26,9 +26,15 @@ export const isCodePlateMotif = (value: string): value is CodePlateMotif =>
  * Explicit plate_mode wins; otherwise infer from code_plate / svg / color.
  */
 export const resolvePlateMode = (scene: SceneData): PlateMode => {
-  if (scene.plate_mode === 'code' || scene.plate_mode === 'svg' || scene.plate_mode === 'raster') {
+  if (
+    scene.plate_mode === 'code' ||
+    scene.plate_mode === 'svg' ||
+    scene.plate_mode === 'mg' ||
+    scene.plate_mode === 'raster'
+  ) {
     return scene.plate_mode;
   }
+  if (scene.mg_plate && typeof scene.mg_plate === 'object') return 'mg';
   if (scene.code_plate && typeof scene.code_plate === 'object') return 'code';
   if (scene.assets?.svg) return 'svg';
   return 'raster';
@@ -36,7 +42,7 @@ export const resolvePlateMode = (scene: SceneData): PlateMode => {
 
 export const isNonRasterPlate = (scene: SceneData): boolean => {
   const mode = resolvePlateMode(scene);
-  return mode === 'code' || mode === 'svg';
+  return mode === 'code' || mode === 'svg' || mode === 'mg';
 };
 
 /** Identity key so visual-interval continuity checks stay meaningful for non-raster plates. */

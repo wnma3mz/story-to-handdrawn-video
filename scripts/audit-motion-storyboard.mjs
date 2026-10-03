@@ -7,7 +7,7 @@ const file = resolve(root, process.argv[2] || 'storyboard.json');
 if (!existsSync(file)) throw new Error(`missing storyboard: ${file}`);
 
 const storyboard = JSON.parse(readFileSync(file, 'utf8'));
-const profiles = JSON.parse(readFileSync(resolve(root, 'src/motion-profiles.json'), 'utf8'));
+const profiles = JSON.parse(readFileSync(resolve(root, 'src/common/motion-profiles.json'), 'utf8'));
 const {width, height} = storyboard.project;
 const intervals = [];
 
@@ -43,7 +43,7 @@ for (const interval of intervals) {
   const safetyZoomPct = (Math.min(profile.startScale, profile.endScale) - 1) * 100;
   if (interval.motion === 'push_soft' || interval.motion === 'pull_soft') {
     if (scaleDeltaPct < 1.4) errors.push(`${interval.id}: soft zoom is below 1.4%`);
-  } else if (['push_left', 'push_right'].includes(interval.motion)) {
+  } else if (['push_left', 'push_right', 'push_up', 'push_down'].includes(interval.motion)) {
     if (scaleDeltaPct < 2.4) errors.push(`${interval.id}: active zoom is below 2.4%`);
   } else if (interval.motion.startsWith('pan_')) {
     if (panTraversePx < 24) errors.push(`${interval.id}: pan traverse is below 24px`);

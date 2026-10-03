@@ -1,6 +1,6 @@
 import type {CSSProperties} from 'react';
 import {Img, staticFile, useCurrentFrame} from 'remotion';
-import {revealProgress} from './easing';
+import {revealProgress} from './common/easing';
 
 type TextWipeVariant = 'diary' | 'essay';
 

@@ -1,5 +1,5 @@
 import rawStoryboard from '@storyboard-data';
-import motionProfiles from './motion-profiles.json';
+import motionProfiles from './common/motion-profiles.json';
 import type {Storyboard} from './types';
 
 export const parseStoryboard = (

@@ -1,7 +1,44 @@
 import type {CSSProperties, PropsWithChildren} from 'react';
 import {interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
-import motionProfiles from './motion-profiles.json';
+import framing from './common/framing.json';
+import motionProfiles from './common/motion-profiles.json';
 import type {SceneData} from './types';
+
+type FramingBox = {left: number; right: number; top: number; bottom: number};
+type RatioKey = '9:16' | '3:4' | '16:9';
+
+const RATIOS: {key: RatioKey; value: number}[] = [
+  {key: '9:16', value: 9 / 16},
+  {key: '3:4', value: 3 / 4},
+  {key: '16:9', value: 16 / 9},
+];
+
+/** 由画布尺寸反查画幅键。取景框按画幅查表，不匹配时退回 3:4。 */
+const ratioKey = (width: number, height: number): RatioKey => {
+  const ratio = width / height;
+  for (const entry of RATIOS) {
+    if (Math.abs(ratio - entry.value) < 0.01) {
+      return entry.key;
+    }
+  }
+  return '3:4';
+};
+
+/**
+ * 取景框按画幅查表。历史实现在此写死成一串三元表达式，换画幅只能改代码；
+ * 抽成配置后新增 9:16 不必再动组件，且 3:4 / 16:9 的取值与原实现完全一致。
+ */
+const framingBox = (
+  mode: SceneData['visual_mode'],
+  width: number,
+  height: number,
+): FramingBox => {
+  const modeKey =
+    mode === 'ink-comic' ? 'ink-comic' : mode === 'essay' ? 'essay' : 'diary';
+  const key = ratioKey(width, height);
+  const bucket = key === '16:9' ? framing.landscape['16:9'] : framing.portrait[key];
+  return bucket[modeKey] as FramingBox;
+};
 
 const smoothstep = (value: number) => value * value * (3 - 2 * value);
 
@@ -58,6 +95,12 @@ const motionStyle = (
     case 'push_right':
       transformOrigin = '70% 50%';
       break;
+    case 'push_down':
+      transformOrigin = '50% 30%';
+      break;
+    case 'push_up':
+      transformOrigin = '50% 70%';
+      break;
     default:
       break;
   }
@@ -74,8 +117,7 @@ export const MotionStage: React.FC<
 > = ({scene, children}) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
-  const portraitInkComic =
-    scene.visual_mode === 'ink-comic' && height > width;
+  const box = framingBox(scene.visual_mode, width, height);
   const totalFrames = Math.max(1, Math.round(scene.duration_sec * fps));
   const localLinear = interpolate(
     frame,
@@ -92,34 +134,10 @@ export const MotionStage: React.FC<
       style={{
         position: 'absolute',
         zIndex: 10,
-        left: portraitInkComic
-          ? 42
-          : scene.visual_mode === 'ink-comic'
-            ? 0
-            : scene.visual_mode === 'essay'
-              ? 106
-              : 74,
-        right: portraitInkComic
-          ? 42
-          : scene.visual_mode === 'ink-comic'
-            ? 0
-            : scene.visual_mode === 'essay'
-              ? 106
-              : 74,
-        top: portraitInkComic
-          ? 154
-          : scene.visual_mode === 'ink-comic'
-            ? 0
-            : scene.visual_mode === 'essay'
-              ? 680
-              : 382,
-        bottom: portraitInkComic
-          ? 458
-          : scene.visual_mode === 'ink-comic'
-            ? 0
-            : scene.visual_mode === 'essay'
-              ? 62
-              : 42,
+        left: box.left,
+        right: box.right,
+        top: box.top,
+        bottom: box.bottom,
         overflow: 'hidden',
       }}
     >

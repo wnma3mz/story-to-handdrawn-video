@@ -8,7 +8,7 @@ import {
 import {LayerWipe} from './LayerWipe';
 import {InkComicScene} from './InkComicScene';
 import {MotionStage} from './MotionStage';
-import {isNonRasterPlate} from './plateMode';
+import {isNonRasterPlate, resolvePlateMode} from './plateMode';
 import {ScenePlate} from './ScenePlate';
 import {TextWipe} from './TextWipe';
 import type {SceneData} from './types';
@@ -25,6 +25,15 @@ export const Scene: React.FC<{scene: SceneData}> = ({scene}) => {
   const fullUploadedPage =
     scene.shot === 'full_uploaded_page' && scene.assets.color;
   const nonRaster = isNonRasterPlate(scene);
+
+  // mg 板型只由 motiongraphics composition 绘制。在 handdrawn 路径下静默渲染会
+  // 产出一段看起来"配好图了"的错误画面，比直接失败更难排查，因此立刻报错。
+  if (resolvePlateMode(scene) === 'mg') {
+    throw new Error(
+      `镜次 ${scene.id} 使用 plate_mode=mg（程序化图元），只能由 MotionGraphicsSilent 渲染。` +
+        '改用 `npm run render:mg`，或把该镜次的 plate_mode 换回 raster/svg/code。',
+    );
+  }
 
   if (scene.visual_mode === 'ink-comic') {
     return <InkComicScene scene={scene} />;

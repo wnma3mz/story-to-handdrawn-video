@@ -5,7 +5,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion';
-import {revealProgress} from './easing';
+import {revealProgress} from './common/easing';
 import {Scene} from './Scene';
 import {
   sceneContentFrameForLayerFrame,

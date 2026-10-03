@@ -1,8 +1,174 @@
-# story-to-handdrawn-video
+# text-to-video
+
+**输入文本 → 可发布视频**的完整生产线。本仓库由三个开源项目合并而成，
+把「小说改编」「出图」「渲染」「配音」「质检」接成一条链。
+
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-orange.svg)](LICENSE)
+
+> **非商用授权。** 因为合并的 [anything2explainer](https://github.com/wnma3mz/anything2explainer)
+> 是 PolyForm Noncommercial 1.0.0，本仓库整体只能非商用使用。
+> 逐项来源与授权见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+> 用本工具产出的视频归创作者所有，不受此限制。
+
+---
+
+## 合并自三个项目
+
+| 项目 | 在本仓库中承担 | 链接 | 授权 |
+|---|---|---|---|
+| **Toonflow Adapter Kit** | L1 内容层：小说 → 剧本 → 分镜 → 出图提示词（183 个提示词，零运行代码） | [toonflow-adapter-kit](https://github.com/wnma3mz/toonflow-adapter-kit) ・ 原始 [Toonflow-app](https://github.com/HBAI-Ltd/Toonflow-app) | MIT |
+| **story-to-handdrawn-video** | L2/L3 渲染器：storyboard schema、出图依赖图、Remotion 渲染、配音、审计 | [wnma3mz/sth](https://github.com/wnma3mz/story-to-handdrawn-video) ・ 原始 [gnipbao/sth](https://github.com/gnipbao/story-to-handdrawn-video) | MIT |
+| **anything2explainer** | L3 配音与质检：5 引擎 TTS、逐镜量化质检、多 Agent 协议 | [wnma3mz/a2e](https://github.com/wnma3mz/anything2explainer) | PolyForm Noncommercial |
+
+三者原本各管一段、互不相通：
+
+- toonflow 停在提示词，明确声明「不生成视频」
+- story-to-handdrawn-video 会自动分句出片，但没有改编与分镜设计能力
+- anything2explainer 能出片，但画面全部用代码画，不做叙事改编
+
+**合并新增的东西在 `adapters/`**——上游内容层产出的是 Markdown，
+渲染器只认 JSON，这一层是两者之间唯一的转换点，也是台词锁能守住的原因。
+
+## 架构
+
+```
+输入：小说 / 故事文案
+  │
+  ├─ L1 内容层 ····································· content/skills/*.md 作系统提示词
+  │    S1 故事骨架 → S2 改编策略 → S3 分集剧本 → S4 导演规划
+  │    S5 全局资产登记 + 资产提示词 → S6 分镜表 → S7 分镜面板
+  │                                              产出 Markdown
+  ├─ 编译层 ······································ adapters/
+  │    07_分镜面板.md ──→ storyboard.json         渲染器输入
+  │    05_资产提示词.md ─→ codex-image-jobs.json   出图依赖图
+  │    storyboard.json ──→ voiceover.json         配音输入（按场分组）
+  │    verify_lock.py ───→ 十条红线机器校验
+  │
+  ├─ 出图 ········································ 三级依赖图，拓扑执行
+  │    references  角色四视图 + 道具四宫格（并发 1）
+  │      └→ scenes  场景主视图，无人无道具，本镜全部光影由它承担
+  │          └→ shots  逐镜合成图（并发 N）
+  │
+  ├─ 渲染 ········································ Remotion 4，两条 composition
+  │    PictureSilent          handdrawn：AI 生图 + 代码动效
+  │    MotionGraphicsSilent   纯代码绘制，不经过出图
+  │
+  ├─ 配音 ········································ 一组一次 TTS，组内不切句
+  │    edge-tts ｜ macos-say ｜ piper ｜ kokoro ｜ kokoro-onnx ｜ IndexTTS-2.5
+  │
+  └─ 交付 ········································ 封面 + 配音版 + 发布版 + 审计
+```
+
+### 三种输出形态
+
+| 形态 | 画面来源 | 适用 |
+|---|---|---|
+| `ink-comic` | AI 生图 + 代码动效 | **短剧**（默认）：底部逐句字幕、单一线索色、台词锁定 |
+| `diary` | AI 生图 + 代码动效 | 手绘日记漫画：`文字 → 黑白画稿 → 彩色插画` 逐层揭示 |
+| `essay` | AI 生图 | 文学随笔：文字主导，插画只做呼吸式运镜 |
+| `motiongraphics` | **纯代码绘制** | 文字密度高的解说片，不需要出图环节 |
+
+### 三种画幅
+
+`9:16`（短剧原生，本项目新增）、`3:4`（历史形态）、`16:9`。
+取景框按画幅查表（`src/common/framing.json`），新增画幅不必改组件。
+
+## 五分钟跑通
+
+```bash
+npm ci
+python3 -m pip install -r requirements.txt
+npm run check                      # 类型 + 分镜 + 音频 + 47 个单测
+
+export STORY_VIDEO_WORKSPACE=/absolute/path/to/your-task
+cp content/templates/00_项目配置.md "$STORY_VIDEO_WORKSPACE/"
+```
+
+把 L1 产出的四份 Markdown 放进工作目录，然后：
+
+```bash
+cd "$STORY_VIDEO_WORKSPACE"
+
+# 1. 分镜面板 → storyboard.json（9:16 / ink-comic）
+python3 <repo>/adapters/compile_storyboard.py \
+  --panel  07_分镜面板_EP01.md \
+  --assets 05_全局资产登记.md \
+  --output storyboard.json --asset-set ep01
+
+# 2. 复查十条红线——有阻断就别往下走
+python3 <repo>/adapters/verify_lock.py \
+  --script 03_剧本_EP01.md --panel 07_分镜面板_EP01.md \
+  --registry 05_全局资产登记.md --storyboard storyboard.json
+
+# 3. 资产提示词 → 出图依赖图
+python3 <repo>/adapters/compile_image_jobs.py \
+  --registry 05_全局资产登记.md --prompts 05_资产提示词.md \
+  --panel 07_分镜面板_EP01.md --storyboard storyboard.json \
+  --output codex-image-jobs.json --prompt-dir prompts/generated/ep01
+
+# 4. 按依赖图出图，然后派生黑白层与彩色层
+npm run import:codex -- --manifest codex-image-jobs.json
+
+# 5. 配音配置（按场边界分组，不是固定镜数）
+python3 <repo>/adapters/compile_narration.py \
+  --storyboard storyboard.json --output voiceover.json
+
+# 6. 渲染 + 配音 + 交付
+npm run render   -- --episode ep01
+npm run build:audio -- --episode ep01
+npm run release  -- --episode ep01
+npm run audit:delivery -- out/ep01/voiced/release.mp4
+```
+
+**Agent 接手请先读 [AGENTS.md](AGENTS.md)。**
+
+## 目录
+
+```
+├── content/            L1 内容层（202 个文件，从 Toonflow-app 提取）
+│   ├── skills/          183 个提示词：题材 12 × 画风 11 × 制作技法 2
+│   ├── docs/            流程详解、关键概念、快速上手、阶段契约
+│   ├── templates/       新项目建档模板
+│   └── examples/中间人/  EP01 实跑样例
+├── adapters/           编译层：Markdown → JSON（见 adapters/README.md）
+├── src/
+│   ├── common/          两条 composition 共用：运动词汇、取景框、缓动
+│   ├── compositions/motiongraphics/  纯代码绘制路径
+│   └── *.tsx            handdrawn 路径（Scene / MotionStage / InkComicScene…）
+├── scripts/            46 个 CLI：渲染、导入、审计、打包、异步作业
+├── audio/              多引擎旁白预合成（tts_engines.py）
+├── qc/                 逐镜量化质检（frame_metrics / motion_check / shot_ranges）
+├── config/             视觉模式与 style profile
+└── skill-package/      可分发的 Agent Skill
+```
+
+## 环境要求
+
+Node.js ≥20 ｜ Python 3.10+（Pillow、NumPy、scipy、edge-tts）｜
+FFmpeg ｜ Chrome 或 Remotion 托管浏览器
+
+TTS 后端按需安装：`pip install piper-tts` / `pip install kokoro soundfile` /
+`pip install kokoro-onnx`。默认用 `edge-tts`（需联网）。
+
+## 十条红线
+
+台词逐字一致 ｜ 分镜层禁光影色调词 ｜ 禁 BGM ｜ 台词不进提示词 ｜
+单镜 ≤8s ｜ 长台词拆镜 ｜ 上场角色齐 ｜ 每镜恰引一个场景 ID ｜
+角色四视图素颜无配饰 ｜ 道具纯静物场景无人
+
+九条由 `adapters/verify_lock.py` 机器校验。详见 [AGENTS.md](AGENTS.md)。
+
+---
+
+## 以下为 story-to-handdrawn-video 原文档
+
+合并自 https://github.com/gnipbao/story-to-handdrawn-video （MIT, © 2026 gnipbao）。
+该部分描述渲染器的原始能力，仍然有效。
+
 
 [中文](#中文) | [English](#english)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE-MIT-gnipbao.txt)
 
 ---
 

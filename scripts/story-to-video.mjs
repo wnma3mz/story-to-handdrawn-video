@@ -17,7 +17,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 const styles = JSON.parse(readFileSync(resolve(root, 'config/styles.json'), 'utf8'));
 const motionProfiles = JSON.parse(
-  readFileSync(resolve(root, 'src/motion-profiles.json'), 'utf8'),
+  readFileSync(resolve(root, 'src/common/motion-profiles.json'), 'utf8'),
 );
 const allowedMotions = new Set(Object.keys(motionProfiles));
 const fill = (text, vars) => text.replace(/\{(\w+)\}/g, (_, key) => (vars && key in vars) ? String(vars[key]) : `{${key}}`);

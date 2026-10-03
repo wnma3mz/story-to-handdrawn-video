@@ -1,5 +1,5 @@
 import {Img, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
-import {revealProgress} from './easing';
+import {revealProgress} from './common/easing';
 
 type LayerWipeProps = {
   src: string;
