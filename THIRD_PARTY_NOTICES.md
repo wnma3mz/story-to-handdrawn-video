@@ -78,3 +78,24 @@ Noncommercial 1.0.0。若需要商用，必须先取得 a2e 原作者的单独�
 本仓库对上游文件做了实质性修改。按 PolyForm Noncommercial 1.0.0 的
 Redistribution 第 2 条，凡修改过的文件均已在文件头或本文件中标明来源与
 改动性质。详细改动清单见 `CHANGELOG.md`。
+
+## 未并入的部分，以及怎么取回
+
+原 `anything2explainer` 与 `toonflow-adapter-kit` 的本地目录已在合并完成后删除。
+两者都是公开仓库，需要下列未并入内容时可随时 clone 取回：
+
+```bash
+git clone https://github.com/wnma3mz/anything2explainer.git
+git clone https://github.com/wnma3mz/toonflow-adapter-kit.git
+```
+
+| 未并入内容 | 所在 | 为什么不并入 |
+|---|---|---|
+| `template/src/` 1822 行 Remotion 画布（幕底、glitch、字幕带、进度条、HUD、图元库） | anything2explainer | 本项目的 `src/compositions/motiongraphics/` 是按同一方法论重写的精简版（430 行），只保留骨架。完整画布需要时从上游取 |
+| `template/scripts/` 其余 5 个脚本（`render.sh` / `still.sh` / `preview.sh` / `frame_metrics.py` 的原版 / `selfcheck.py`） | anything2explainer | 渲染与抽帧能力本项目已有一套；`selfcheck.py` 检查的是 a2e 特有的代码镜次结构，对本项目不适用 |
+| `examples/rag/` 120 个过程文件 | anything2explainer | **已并入 `projects/rag/`**，作为第三部成片的本地归档 |
+| `examples/contrast/` 14 个文件 | anything2explainer | **已并入 `agent-rules/contrast/`** 并入库 |
+| `CITATION.cff` | anything2explainer | 本项目有自己的仓库元信息 |
+
+`toonflow-adapter-kit` 的 202 个文件**已 100% 并入 `content/`**，逐文件核对无遗漏，
+该目录删除无任何损失。
